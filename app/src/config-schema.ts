@@ -151,6 +151,11 @@ export default {
             default: false,
             title: localized('Move to trash (not archive) on swipe / backspace'),
           },
+          disableSwipe: {
+            type: 'boolean',
+            default: false,
+            title: localized('Disable swipe gestures on the thread list'),
+          },
           descendingOrderMessageList: {
             type: 'boolean',
             default: false,
