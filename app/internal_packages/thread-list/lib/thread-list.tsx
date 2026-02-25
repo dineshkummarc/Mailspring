@@ -143,7 +143,7 @@ class ThreadList extends React.Component<
     const props: any = { className: classes };
 
     props.shouldEnableSwipe = () => {
-      if (AppEnv.config.get('core.reading.disableSwipe')) {
+      if (AppEnv.config.get('core.reading.swipeDisabled')) {
         return false;
       }
       const perspective = FocusedPerspectiveStore.current();

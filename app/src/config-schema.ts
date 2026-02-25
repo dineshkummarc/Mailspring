@@ -146,15 +146,15 @@ export default {
             default: false,
             title: localized('Restrict width of messages to maximize readability'),
           },
-          backspaceDelete: {
-            type: 'boolean',
-            default: false,
-            title: localized('Move to trash (not archive) on swipe / backspace'),
-          },
-          disableSwipe: {
+          swipeDisabled: {
             type: 'boolean',
             default: false,
             title: localized('Disable swipe gestures on the thread list'),
+          },
+          swipeDelete: {
+            type: 'boolean',
+            default: false,
+            title: localized('Move to trash (not archive) on swipe / backspace'),
           },
           descendingOrderMessageList: {
             type: 'boolean',

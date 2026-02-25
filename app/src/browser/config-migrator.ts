@@ -7,5 +7,12 @@ export default class ConfigMigrator {
     this.config = config;
   }
 
-  migrate() {}
+  migrate() {
+    // Rename core.reading.backspaceDelete → core.reading.swipeDelete
+    const oldVal = this.config.get('core.reading.backspaceDelete');
+    if (oldVal !== undefined) {
+      this.config.set('core.reading.swipeDelete', oldVal);
+      this.config.set('core.reading.backspaceDelete', undefined);
+    }
+  }
 }
