@@ -212,7 +212,7 @@ export class Account extends ModelWithMetadata {
 
   preferredRemovalDestination() {
     CategoryStore = CategoryStore || require('../stores/category-store').default;
-    const preferDelete = AppEnv.config.get('core.reading.swipeDelete');
+    const preferDelete = AppEnv.config.get('core.reading.backspaceDelete');
     if (preferDelete || !CategoryStore.getArchiveCategory(this)) {
       return CategoryStore.getTrashCategory(this);
     }
