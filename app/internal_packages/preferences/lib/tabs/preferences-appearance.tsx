@@ -47,7 +47,7 @@ class AppearanceScaleSlider extends React.Component<
           max={1.4}
           step={0.05}
           value={this.state.value}
-          onChange={e => this.props.config.set(this.kp, e.target.value)}
+          onChange={(e) => this.props.config.set(this.kp, e.target.value)}
         />
       </div>
     );
@@ -57,7 +57,7 @@ class AppearanceScaleSlider extends React.Component<
 class MenubarStylePicker extends React.Component<{ config: ConfigLike }> {
   kp = 'core.workspace.menubarStyle';
 
-  onChangeMenubarStyle = e => {
+  onChangeMenubarStyle = (e) => {
     this.props.config.set(this.kp, e.target.value);
   };
 
@@ -148,7 +148,7 @@ class AppearanceModeSwitch extends React.Component<
   };
 
   _renderModeOptions() {
-    return ['list', 'split', 'splitVertical'].map(mode => (
+    return ['list', 'split', 'splitVertical'].map((mode) => (
       <AppearanceModeOption
         mode={mode}
         key={mode}
@@ -179,7 +179,7 @@ class AppearanceModeSwitch extends React.Component<
 class TrayIconStylePicker extends React.Component<{ config: ConfigLike }> {
   kp = 'core.workspace.trayIconStyle';
 
-  onChangeTrayIconStyle = e => {
+  onChangeTrayIconStyle = (e) => {
     this.props.config.set(this.kp, e.target.value);
   };
 
@@ -202,6 +202,14 @@ class TrayIconStylePicker extends React.Component<{ config: ConfigLike }> {
         ),
         systemTrayIconScore.inboxFullNewIcon(),
       ],
+      [
+        'none',
+        localized('No unread status indication'),
+        localized(
+          '(The tray icon always shows the default appearance regardless of unread messages.)'
+        ),
+        systemTrayIconScore.inboxFullIcon(),
+      ],
     ];
 
     return (
@@ -219,6 +227,58 @@ class TrayIconStylePicker extends React.Component<{ config: ConfigLike }> {
                 onChange={this.onChangeTrayIconStyle}
               />
               <img src={icon} style={{ height: 16, width: 16 }} />
+              {` ${description} `}
+              {comment && (
+                <div style={{ paddingLeft: 24, fontSize: '0.9em', opacity: 0.7 }}>{comment}</div>
+              )}
+            </label>
+          </div>
+        ))}
+      </section>
+    );
+  }
+}
+
+class TrayIconThemePicker extends React.Component<{ config: ConfigLike }> {
+  kp = 'core.workspace.trayIconTheme';
+
+  onChangeTrayIconTheme = (e) => {
+    this.props.config.set(this.kp, e.target.value);
+  };
+
+  render() {
+    if (process.platform !== 'linux') return null;
+
+    const val = this.props.config.get(this.kp) || 'automatic';
+
+    const options = [
+      [
+        'automatic',
+        localized('Automatic'),
+        localized('(Detect from system theme. On GNOME/Unity, assumes a dark tray background.)'),
+      ],
+      [
+        'light',
+        localized('Light tray background'),
+        localized('(Use dark icons for a light tray.)'),
+      ],
+      ['dark', localized('Dark tray background'), localized('(Use light icons for a dark tray.)')],
+    ];
+
+    return (
+      <section>
+        <h6>{localized('Tray icon theme')}</h6>
+        {options.map(([enumValue, description, comment], idx) => (
+          <div key={enumValue} style={{ marginBottom: 10 }}>
+            <label htmlFor={`tray-theme-radio${idx}`}>
+              <input
+                id={`tray-theme-radio${idx}`}
+                type="radio"
+                value={enumValue}
+                name="trayIconTheme"
+                checked={val === enumValue}
+                onChange={this.onChangeTrayIconTheme}
+              />
               {` ${description} `}
               {comment && (
                 <div style={{ paddingLeft: 24, fontSize: '0.9em', opacity: 0.7 }}>{comment}</div>
@@ -292,6 +352,7 @@ class PreferencesAppearance extends React.Component<{ config: ConfigLike; config
           </div>
         </section>
         <TrayIconStylePicker config={this.props.config} />
+        <TrayIconThemePicker config={this.props.config} />
       </div>
     );
   }

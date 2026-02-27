@@ -40,6 +40,16 @@ export default {
               'On Linux you need to restart Mailspring for the tray icon to disappear.'
             ),
           },
+          trayIconStyle: {
+            type: 'string',
+            default: 'blue',
+            enum: ['blue', 'red', 'none'],
+          },
+          trayIconTheme: {
+            type: 'string',
+            default: 'automatic',
+            enum: ['automatic', 'light', 'dark'],
+          },
           showImportant: {
             type: 'boolean',
             default: true,
@@ -157,7 +167,7 @@ export default {
             title: localized('Enable rich text and advanced editor features'),
             note: localized(
               'Many features are unavailable in plain-text mode. To create a single ' +
-              'plain-text draft, hold Alt or Option while clicking Compose or Reply.'
+                'plain-text draft, hold Alt or Option while clicking Compose or Reply.'
             ),
           },
           spellcheck: {
