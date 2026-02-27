@@ -230,10 +230,16 @@ exports.registerAppUserModelId = registerAppUserModelId;
 // Uses spawnDetached to ensure the child process survives the parent's exit —
 // the piped-stdio `spawn` function can fail when called during `will-quit`
 // because the Node.js event loop tears down the pipe before Update.exe launches
-// the new app instance. See: https://github.com/Foundry376/Mailspring/issues/2811
+// the new app instance.
+//
+// Uses --processStartAndWait (not --processStart) so that Update.exe waits for
+// the current instance to fully release requestSingleInstanceLock() before
+// launching the new one. Without the Wait variant, the new instance can start
+// before the old one exits, hit the single-instance lock, and immediately quit
+// — leaving no running instance. See: https://github.com/electron/electron/pull/6037
 exports.restartMailspring = app => {
   app.once('will-quit', () => {
-    spawnDetached(updateDotExe, ['--processStart', exeName]);
+    spawnDetached(updateDotExe, ['--processStartAndWait', exeName]);
   });
   app.quit();
 };
