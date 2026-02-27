@@ -45,7 +45,7 @@ export default {
             default: 'blue',
             enum: ['blue', 'red', 'none'],
           },
-          trayIconTheme: {
+          traySystemTheme: {
             type: 'string',
             default: 'automatic',
             enum: ['automatic', 'light', 'dark'],

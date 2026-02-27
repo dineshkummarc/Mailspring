@@ -71,12 +71,12 @@ class SystemTrayManager {
   _defaultIconPath() {
     if (this._platform !== 'linux') return null;
 
-    const trayIconTheme =
-      this._application.config.get('core.workspace.trayIconTheme') || 'automatic';
+    const traySystemTheme =
+      this._application.config.get('core.workspace.traySystemTheme') || 'automatic';
     let dark: string;
-    if (trayIconTheme === 'dark') {
+    if (traySystemTheme === 'dark') {
       dark = '-dark';
-    } else if (trayIconTheme === 'light') {
+    } else if (traySystemTheme === 'light') {
       dark = '';
     } else {
       // Automatic: On GNOME/Unity the top bar panel is always dark regardless of the

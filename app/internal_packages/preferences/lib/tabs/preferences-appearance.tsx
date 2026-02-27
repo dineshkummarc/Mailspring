@@ -240,7 +240,7 @@ class TrayIconStylePicker extends React.Component<{ config: ConfigLike }> {
 }
 
 class TrayIconThemePicker extends React.Component<{ config: ConfigLike }> {
-  kp = 'core.workspace.trayIconTheme';
+  kp = 'core.workspace.traySystemTheme';
 
   onChangeTrayIconTheme = (e) => {
     this.props.config.set(this.kp, e.target.value);
@@ -275,7 +275,7 @@ class TrayIconThemePicker extends React.Component<{ config: ConfigLike }> {
                 id={`tray-theme-radio${idx}`}
                 type="radio"
                 value={enumValue}
-                name="trayIconTheme"
+                name="traySystemTheme"
                 checked={val === enumValue}
                 onChange={this.onChangeTrayIconTheme}
               />
