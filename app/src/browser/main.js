@@ -274,8 +274,14 @@ const handleStartupEventWithSquirrel = () => {
       WindowsUpdater.handleSquirrelInstall(app);
       return true;
     case '--squirrel-updated':
-      // Restart the app after update
-      WindowsUpdater.restartMailspring(app);
+      // Squirrel runs the NEW version with this flag after applying an update.
+      // Per Squirrel.Windows conventions, we should update shortcuts and exit
+      // quickly — NOT restart the app. The restart happens later when the user
+      // triggers "Install Update" via the UI, which calls restartMailspring().
+      // Previously this called restartMailspring() which spawned a new instance
+      // that would be killed by requestSingleInstanceLock() (the original app
+      // is still running), wasting time and risking Squirrel's 15s timeout.
+      WindowsUpdater.handleSquirrelUpdated(app);
       return true;
     case '--squirrel-uninstall':
       // Handle uninstall with fast exit - spawns detached processes and quits immediately

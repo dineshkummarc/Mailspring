@@ -88,7 +88,7 @@ function spawnDetached(command, args) {
     });
     child.unref();
   } catch (error) {
-    // Ignore spawn errors - we're exiting anyway
+    console.error(`Failed to spawn detached process: ${command} ${args.join(' ')}`, error.message);
   }
 }
 
@@ -226,10 +226,14 @@ function registerAppUserModelId(callback) {
 
 exports.registerAppUserModelId = registerAppUserModelId;
 
-// Restart Mailspring using the version pointed to by the Mailspring.cmd shim
+// Restart Mailspring using the version pointed to by the Mailspring.cmd shim.
+// Uses spawnDetached to ensure the child process survives the parent's exit —
+// the piped-stdio `spawn` function can fail when called during `will-quit`
+// because the Node.js event loop tears down the pipe before Update.exe launches
+// the new app instance. See: https://github.com/Foundry376/Mailspring/issues/2811
 exports.restartMailspring = app => {
   app.once('will-quit', () => {
-    spawnUpdate(['--processStart', exeName], () => {}, { detached: true });
+    spawnDetached(updateDotExe, ['--processStart', exeName]);
   });
   app.quit();
 };
@@ -332,6 +336,41 @@ exports.handleSquirrelInstall = app => {
   // Registry entries for mailto: protocol are registered on first normal app launch
   // (via createRegistryEntries call in main.js startup). This ensures registration
   // completes even if the detached processes here don't finish before Squirrel's timeout.
+
+  // Exit immediately - don't wait for spawned processes
+  app.quit();
+};
+
+// Handle --squirrel-updated event with fast exit.
+// Squirrel runs the NEW app version with this flag after extracting an update.
+// We update shortcuts to point to the new version and exit immediately.
+// The actual app restart happens later when the user clicks "Install Update".
+exports.handleSquirrelUpdated = app => {
+  // Update shortcuts to point to the new app version (detached - won't block exit)
+  spawnDetached(updateDotExe, [
+    '--createShortcut',
+    exeName,
+    '--shortcut-locations',
+    'Desktop,StartMenu',
+  ]);
+
+  // Update visual elements files
+  try {
+    fs.copyFileSync(
+      path.join(appFolder, 'resources', 'mailspring-75px.png'),
+      path.join(rootAppDataFolder, 'mailspring-75px.png')
+    );
+    fs.copyFileSync(
+      path.join(appFolder, 'resources', 'mailspring-150px.png'),
+      path.join(rootAppDataFolder, 'mailspring-150px.png')
+    );
+    fs.copyFileSync(
+      path.join(appFolder, 'resources', 'mailspring.VisualElementsManifest.xml'),
+      path.join(rootAppDataFolder, 'mailspring.VisualElementsManifest.xml')
+    );
+  } catch (err) {
+    // Ignore errors - visual elements are optional
+  }
 
   // Exit immediately - don't wait for spawned processes
   app.quit();
