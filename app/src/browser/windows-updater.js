@@ -226,6 +226,23 @@ function registerAppUserModelId(callback) {
 
 exports.registerAppUserModelId = registerAppUserModelId;
 
+// Copy Start Menu tile visual elements (icon PNGs + manifest XML) from the
+// current app-x.x.x/resources directory to the root install directory so
+// Windows can display a branded tile. Errors are ignored — these are optional.
+function copyVisualElements() {
+  try {
+    const files = ['mailspring-75px.png', 'mailspring-150px.png', 'mailspring.VisualElementsManifest.xml'];
+    for (const file of files) {
+      fs.copyFileSync(
+        path.join(appFolder, 'resources', file),
+        path.join(rootAppDataFolder, file)
+      );
+    }
+  } catch (err) {
+    // Ignore errors - visual elements are optional
+  }
+}
+
 // Restart Mailspring using the version pointed to by the Mailspring.cmd shim.
 // Uses spawnDetached to ensure the child process survives the parent's exit —
 // the piped-stdio `spawn` function can fail when called during `will-quit`
@@ -258,23 +275,7 @@ exports.handleSquirrelInstall = app => {
     'Desktop,StartMenu',
   ]);
 
-  // Copy visual elements files synchronously (fast)
-  try {
-    fs.copyFileSync(
-      path.join(appFolder, 'resources', 'mailspring-75px.png'),
-      path.join(rootAppDataFolder, 'mailspring-75px.png')
-    );
-    fs.copyFileSync(
-      path.join(appFolder, 'resources', 'mailspring-150px.png'),
-      path.join(rootAppDataFolder, 'mailspring-150px.png')
-    );
-    fs.copyFileSync(
-      path.join(appFolder, 'resources', 'mailspring.VisualElementsManifest.xml'),
-      path.join(rootAppDataFolder, 'mailspring.VisualElementsManifest.xml')
-    );
-  } catch (err) {
-    // Ignore errors - visual elements are optional
-  }
+  copyVisualElements();
 
   // Create fallback shortcuts synchronously (fast)
   const startMenuPath = path.join(
@@ -360,23 +361,7 @@ exports.handleSquirrelUpdated = app => {
     'Desktop,StartMenu',
   ]);
 
-  // Update visual elements files
-  try {
-    fs.copyFileSync(
-      path.join(appFolder, 'resources', 'mailspring-75px.png'),
-      path.join(rootAppDataFolder, 'mailspring-75px.png')
-    );
-    fs.copyFileSync(
-      path.join(appFolder, 'resources', 'mailspring-150px.png'),
-      path.join(rootAppDataFolder, 'mailspring-150px.png')
-    );
-    fs.copyFileSync(
-      path.join(appFolder, 'resources', 'mailspring.VisualElementsManifest.xml'),
-      path.join(rootAppDataFolder, 'mailspring.VisualElementsManifest.xml')
-    );
-  } catch (err) {
-    // Ignore errors - visual elements are optional
-  }
+  copyVisualElements();
 
   // Exit immediately - don't wait for spawned processes
   app.quit();
