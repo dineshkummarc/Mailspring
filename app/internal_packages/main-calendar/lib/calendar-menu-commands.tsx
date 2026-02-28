@@ -8,7 +8,6 @@ interface CalendarMenuCommandsProps {
   onChangeFocusedMoment: (m: moment.Moment) => void;
   onNavigateNext: () => void;
   onNavigatePrevious: () => void;
-  onNewEvent: () => void;
   onDeleteEvent: () => void;
   onToggleCalendarList: () => void;
   onRefreshCalendars: () => void;
@@ -21,7 +20,6 @@ export class CalendarMenuCommands extends React.Component<CalendarMenuCommandsPr
 
   render() {
     const commands: { [command: string]: () => void } = {
-      'core:add-item': this.props.onNewEvent,
       'calendar:view-day': () => this.props.onChangeView(CalendarView.DAY),
       'calendar:view-week': () => this.props.onChangeView(CalendarView.WEEK),
       'calendar:view-month': () => this.props.onChangeView(CalendarView.MONTH),

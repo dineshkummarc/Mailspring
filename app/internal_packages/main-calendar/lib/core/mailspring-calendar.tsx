@@ -681,17 +681,6 @@ export class MailspringCalendar extends React.Component<
   };
 
   /**
-   * Create a new event via the quick event popover.
-   */
-  _onNewEvent = () => {
-    // Trigger the quick event button's popover by simulating a click on it
-    const btn = document.querySelector('.item-compose') as HTMLElement;
-    if (btn) {
-      btn.click();
-    }
-  };
-
-  /**
    * Toggle calendar list sidebar visibility.
    */
   _onToggleCalendarList = () => {
@@ -747,7 +736,6 @@ export class MailspringCalendar extends React.Component<
         onChangeFocusedMoment={this.onChangeFocusedMoment}
         onNavigateNext={this._onNavigateNext}
         onNavigatePrevious={this._onNavigatePrevious}
-        onNewEvent={this._onNewEvent}
         onDeleteEvent={this._onDeleteSelectedEvents}
         onToggleCalendarList={this._onToggleCalendarList}
         onRefreshCalendars={this._onRefreshCalendars}

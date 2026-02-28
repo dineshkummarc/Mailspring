@@ -62,6 +62,11 @@ function adjustMenus() {
       },
       { type: 'separator' },
       {
+        label: localized('Find Events') + '...',
+        command: 'core:focus-search',
+      },
+      { type: 'separator' },
+      {
         label: localized('Show Calendar List'),
         command: 'calendar:toggle-calendar-list',
       },
