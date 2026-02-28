@@ -93,6 +93,7 @@ class ContactDetailToolbarWithData extends React.Component<ContactDetailToolbarP
     }
     if (actionSet.length > 0) {
       commands['core:delete-item'] = this._onDelete;
+      commands['contacts:export-vcf-selected'] = () => exportContactsToFile(actionSet);
     }
     if (editable) {
       commands['core:edit-item'] = this._onEdit;
@@ -121,19 +122,19 @@ class ContactDetailToolbarWithData extends React.Component<ContactDetailToolbarP
           </button>
           <button
             tabIndex={-1}
+            title={localized('Export VCard')}
+            className={`btn btn-toolbar ${actionSet.length === 0 && 'btn-disabled'}`}
+            onClick={actionSet.length > 0 ? () => exportContactsToFile(actionSet) : undefined}
+          >
+            <RetinaImg name="toolbar-export-contact.png" mode={RetinaImg.Mode.ContentIsMask} />
+          </button>
+          <button
+            tabIndex={-1}
             title={localized('Edit')}
             className={`btn btn-toolbar ${!editable && 'btn-disabled'}`}
             onClick={editable ? this._onEdit : undefined}
           >
             {localized('Edit')}
-          </button>
-          <button
-            tabIndex={-1}
-            title={localized('Export VCard')}
-            className={`btn btn-toolbar ${actionSet.length === 0 && 'btn-disabled'}`}
-            onClick={actionSet.length > 0 ? () => exportContactsToFile(actionSet) : undefined}
-          >
-            {localized('Export')}
           </button>
         </div>
       </BindGlobalCommands>

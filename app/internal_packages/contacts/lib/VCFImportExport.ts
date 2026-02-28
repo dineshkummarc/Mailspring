@@ -164,11 +164,55 @@ export function exportContactsToFile(contacts: Contact[]) {
 }
 
 /**
- * Show a native open-file dialog and queue SyncbackContactTask for each valid
- * contact found in the selected .vcf file(s).
+ * Import contacts from already-resolved file paths into the given account.
+ * Used by both the file-dialog import and the drag-drop handler.
  *
  * Import is only supported for CardDAV accounts; Google (gpeople) accounts do
  * not support creating contacts via the VCF path in the sync engine.
+ */
+export function importContactsFromPaths(filePaths: string[], accountId: string) {
+  const account = AccountStore.accountForId(accountId);
+  if (!account) return;
+
+  if (account.provider === 'gmail') {
+    require('@electron/remote').dialog.showMessageBox({
+      type: 'info',
+      title: localized('Import Not Supported'),
+      message: localized(
+        'Importing VCards is not supported for Google accounts. Please use contacts.google.com to import contacts into this account.'
+      ),
+      buttons: [localized('OK')],
+    });
+    return;
+  }
+
+  let contacts: Contact[] = [];
+  for (const filePath of filePaths) {
+    try {
+      const content = fs.readFileSync(filePath, 'utf-8');
+      contacts = contacts.concat(vcfStringToContacts(content, accountId));
+    } catch (err) {
+      console.error(`VCF import: failed to read ${filePath}:`, err);
+    }
+  }
+
+  if (contacts.length === 0) {
+    require('@electron/remote').dialog.showMessageBox({
+      type: 'info',
+      title: localized('No Contacts Found'),
+      message: localized('No valid contacts were found in the selected file(s).'),
+      buttons: [localized('OK')],
+    });
+    return;
+  }
+
+  for (const contact of contacts) {
+    Actions.queueTask(SyncbackContactTask.forCreating({ contact, accountId }));
+  }
+}
+
+/**
+ * Show a native open-file dialog and import contacts from the selected .vcf file(s).
  */
 export function importContactsFromFile(accountId: string) {
   const account = AccountStore.accountForId(accountId);
@@ -194,30 +238,7 @@ export function importContactsFromFile(accountId: string) {
     },
     filePaths => {
       if (!filePaths || filePaths.length === 0) return;
-
-      let contacts: Contact[] = [];
-      for (const filePath of filePaths) {
-        try {
-          const content = fs.readFileSync(filePath, 'utf-8');
-          contacts = contacts.concat(vcfStringToContacts(content, accountId));
-        } catch (err) {
-          console.error(`VCF import: failed to read ${filePath}:`, err);
-        }
-      }
-
-      if (contacts.length === 0) {
-        require('@electron/remote').dialog.showMessageBox({
-          type: 'info',
-          title: localized('No Contacts Found'),
-          message: localized('No valid contacts were found in the selected file(s).'),
-          buttons: [localized('OK')],
-        });
-        return;
-      }
-
-      for (const contact of contacts) {
-        Actions.queueTask(SyncbackContactTask.forCreating({ contact, accountId }));
-      }
+      importContactsFromPaths(filePaths, accountId);
     }
   );
 }

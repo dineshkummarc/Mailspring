@@ -259,6 +259,32 @@
   }
 }
 
+// Drop overlay shown when a .vcf file is dragged over the contact list
+.contact-list-drop-target {
+  .vcf-drop-overlay {
+    display: none;
+  }
+  &.dragging-files {
+    .vcf-drop-overlay {
+      display: flex;
+      position: absolute;
+      inset: 0;
+      z-index: 10;
+      align-items: center;
+      justify-content: center;
+      background-color: mix(@color-info, @background-primary, 15%);
+      border: 2px dashed mix(@color-info, @border-color-divider, 60%);
+      pointer-events: none;
+
+      .vcf-drop-overlay-label {
+        font-size: 1.1em;
+        color: mix(@color-info, @text-color, 30%);
+        font-weight: @font-weight-semibold;
+      }
+    }
+  }
+}
+
 .found-in-mail-enabled-bar {
   color: mix(@color-info, @text-color, 30%);
   background-color: mix(@color-info, @background-primary, 20%);

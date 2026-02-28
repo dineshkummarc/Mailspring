@@ -23,8 +23,12 @@ function adjustMenus() {
         command: 'contacts:import-vcf',
       },
       {
-        label: localized('Export VCards...'),
-        command: 'contacts:export-vcf',
+        label: localized('Export All VCards...'),
+        command: 'contacts:export-vcf-all',
+      },
+      {
+        label: localized('Export Selected...'),
+        command: 'contacts:export-vcf-selected',
       },
       { type: 'separator' },
       {
@@ -89,7 +93,7 @@ export function activate() {
         });
       }
     },
-    'contacts:export-vcf': () => {
+    'contacts:export-vcf-all': () => {
       const contacts = Store.filteredContacts() || [];
       exportContactsToFile(contacts);
     },

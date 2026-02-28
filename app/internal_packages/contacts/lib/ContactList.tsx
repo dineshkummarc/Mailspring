@@ -1,4 +1,6 @@
 import React, { CSSProperties, useRef } from 'react';
+import ReactDOM from 'react-dom';
+import { webUtils } from 'electron';
 import { Contact, localized, CanvasUtils, AccountStore } from 'mailspring-exports';
 import {
   FocusContainer,
@@ -9,7 +11,8 @@ import {
   ListDataSource,
 } from 'mailspring-component-kit';
 import { ContactsPerspective, Store } from './Store';
-import { writeContactsToTempVCF } from './VCFImportExport';
+import { writeContactsToTempVCF, importContactsFromPaths } from './VCFImportExport';
+import { ContactListContextMenu } from './ContactListContextMenu';
 import _ from 'underscore';
 
 const ContactColumn = new ListTabular.Column({
@@ -50,8 +53,36 @@ interface ContactListProps {
   perspective: ContactsPerspective;
 }
 
-class ContactListWithData extends React.Component<ContactListProps> {
-  _searchEl = React.createRef<HTMLInputElement>();
+interface ContactListState {
+  draggingFiles: boolean;
+}
+
+class ContactListWithData extends React.Component<ContactListProps, ContactListState> {
+  _dragCounter = 0;
+
+  refs: {
+    list: MultiselectList;
+  };
+
+  constructor(props: ContactListProps) {
+    super(props);
+    this.state = { draggingFiles: false };
+  }
+
+  componentDidMount() {
+    ReactDOM.findDOMNode(this).addEventListener('contextmenu', this._onShowContextMenu);
+  }
+
+  componentWillUnmount() {
+    ReactDOM.findDOMNode(this).removeEventListener('contextmenu', this._onShowContextMenu);
+  }
+
+  _onShowContextMenu = (event: MouseEvent) => {
+    if (!this.refs.list) return;
+    const contacts = this.refs.list.itemsForMouseEvent(event) as Contact[];
+    if (!contacts || contacts.length === 0) return;
+    new ContactListContextMenu(contacts).displayMenu();
+  };
 
   _onDragItems = (event, items) => {
     const data = {
@@ -77,23 +108,90 @@ class ContactListWithData extends React.Component<ContactListProps> {
     }
   };
 
+  // --- VCF file drop-into-list handling ---
+
+  _isFileDrag(e: React.DragEvent) {
+    return e.dataTransfer.types.includes('Files');
+  }
+
+  _onFileDragEnter = (e: React.DragEvent) => {
+    if (!this._isFileDrag(e)) return;
+    this._dragCounter++;
+    if (this._dragCounter === 1) this.setState({ draggingFiles: true });
+  };
+
+  _onFileDragLeave = (e: React.DragEvent) => {
+    if (!this._isFileDrag(e)) return;
+    this._dragCounter--;
+    if (this._dragCounter === 0) this.setState({ draggingFiles: false });
+  };
+
+  _onFileDragOver = (e: React.DragEvent) => {
+    if (!this._isFileDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = 'copy';
+  };
+
+  _onFileDrop = (e: React.DragEvent) => {
+    if (!this._isFileDrag(e)) return;
+    e.preventDefault();
+    this._dragCounter = 0;
+    this.setState({ draggingFiles: false });
+
+    const vcfFiles = Array.from(e.dataTransfer.files).filter(f => {
+      const lower = f.name.toLowerCase();
+      return lower.endsWith('.vcf') || lower.endsWith('.vcard');
+    });
+    if (vcfFiles.length === 0) return;
+
+    const { perspective } = this.props;
+    if (!('accountId' in perspective)) {
+      require('@electron/remote').dialog.showMessageBox({
+        type: 'info',
+        title: localized('Select an Account'),
+        message: localized(
+          'Please select a specific account from the sidebar before importing contacts.'
+        ),
+        buttons: [localized('OK')],
+      });
+      return;
+    }
+
+    importContactsFromPaths(vcfFiles.map(f => webUtils.getPathForFile(f)), perspective.accountId);
+  };
+
   render() {
+    const { draggingFiles } = this.state;
     return (
-      <FocusContainer collection="contact">
-        <MultiselectList
-          ref="list"
-          draggable
-          key={JSON.stringify(this.props.perspective)}
-          className="contact-list"
-          columns={[ContactColumn]}
-          dataSource={this.props.listSource}
-          itemPropsProvider={() => ({})}
-          itemHeight={32}
-          EmptyComponent={ContactsListEmpty}
-          onDragItems={this._onDragItems}
-          onDragEnd={() => null}
-        />
-      </FocusContainer>
+      <div
+        className={`contact-list-drop-target${draggingFiles ? ' dragging-files' : ''}`}
+        style={{ flex: 1, display: 'flex', flexDirection: 'column', position: 'relative' }}
+        onDragEnter={this._onFileDragEnter}
+        onDragLeave={this._onFileDragLeave}
+        onDragOver={this._onFileDragOver}
+        onDrop={this._onFileDrop}
+      >
+        {draggingFiles && (
+          <div className="vcf-drop-overlay">
+            <div className="vcf-drop-overlay-label">{localized('Drop to Import VCards')}</div>
+          </div>
+        )}
+        <FocusContainer collection="contact">
+          <MultiselectList
+            ref="list"
+            draggable
+            key={JSON.stringify(this.props.perspective)}
+            className="contact-list"
+            columns={[ContactColumn]}
+            dataSource={this.props.listSource}
+            itemPropsProvider={() => ({})}
+            itemHeight={32}
+            EmptyComponent={ContactsListEmpty}
+            onDragItems={this._onDragItems}
+            onDragEnd={() => null}
+          />
+        </FocusContainer>
+      </div>
     );
   }
 }
