@@ -117,16 +117,17 @@ body.platform-win32 {
       overflow: hidden;
 
       .event-meeting-link,
+      .event-location,
       .event-time-range {
-        display: block;
+        display: flex;
+        align-items: center;
+        gap: 2px;
         overflow: hidden;
         text-overflow: ellipsis;
         white-space: nowrap;
 
-        .meeting-icon,
-        .time-icon {
-          font-size: 9px;
-          margin-right: 2px;
+        .detail-icon {
+          flex-shrink: 0;
           opacity: 0.7;
         }
       }
@@ -233,14 +234,6 @@ body.platform-win32 {
       color: var(--event-text-color, inherit);
       opacity: 0.7;
       flex-shrink: 0;
-    }
-
-    // When event is also an exception, shift recurring icon left to make room for "Modified" tag
-    &.exception .recurring-icon {
-      right: auto;
-      left: 5px;
-      top: auto;
-      bottom: 3px;
     }
 
     &.selected .recurring-icon {

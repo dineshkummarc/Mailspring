@@ -280,8 +280,9 @@ export class CalendarEvent extends React.Component<CalendarEventProps, CalendarE
 
     const meetingDomain = extractMeetingDomain(event.location, event.description);
     const timeRange = formatEventTimeRange(event.start, event.end, event.isAllDay);
+    const hasPhysicalLocation = !meetingDomain && !!event.location;
 
-    if (!meetingDomain && !timeRange) {
+    if (!meetingDomain && !hasPhysicalLocation && !timeRange) {
       return null;
     }
 
@@ -289,12 +290,47 @@ export class CalendarEvent extends React.Component<CalendarEventProps, CalendarE
       <div className="event-details">
         {meetingDomain && (
           <span className="event-meeting-link">
-            <span className="meeting-icon">▢</span> {meetingDomain}
+            <svg className="detail-icon" viewBox="0 0 12 12" width="10" height="10">
+              <rect x="1" y="3" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+              <path
+                d="M8 4.5 L11 3 V9 L8 7.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {meetingDomain}
+          </span>
+        )}
+        {hasPhysicalLocation && (
+          <span className="event-location">
+            <svg className="detail-icon" viewBox="0 0 12 12" width="10" height="10">
+              <path
+                d="M6 11 C6 11 2.5 7 2.5 5 A3.5 3.5 0 1 1 9.5 5 C9.5 7 6 11 6 11Z"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.2"
+              />
+              <circle cx="6" cy="5" r="1.3" fill="currentColor" />
+            </svg>
+            {event.location}
           </span>
         )}
         {timeRange && (
           <span className="event-time-range">
-            <span className="time-icon">◷</span> {timeRange}
+            <svg className="detail-icon" viewBox="0 0 12 12" width="10" height="10">
+              <circle cx="6" cy="6" r="4.5" fill="none" stroke="currentColor" strokeWidth="1.3" />
+              <polyline
+                points="6,3 6,6 8.5,7.5"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.3"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            {timeRange}
           </span>
         )}
       </div>
@@ -351,25 +387,32 @@ export class CalendarEvent extends React.Component<CalendarEventProps, CalendarE
           {event.isCancelled ? <s>{event.title}</s> : event.title}
         </span>
         {this._renderEventDetails()}
-        {event.isRecurring && !event.isCancelled && (
+        {event.isRecurring && !event.isCancelled && !event.isException && (
           <svg className="recurring-icon" viewBox="0 0 12 12" width="10" height="10" aria-label="Recurring">
             <path
-              d="M8.5 3.5H4A2.5 2.5 0 0 0 4 8.5H5M3.5 8.5H8A2.5 2.5 0 0 0 8 3.5H7"
+              d="M3 8 Q2 8 2 6 Q2 4 4 4 H6.5"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.3"
               strokeLinecap="round"
             />
             <polyline
-              points="7,1.5 8.5,3.5 7,5.5"
+              points="6.5,2.5 8,4 6.5,5.5"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.3"
               strokeLinecap="round"
               strokeLinejoin="round"
             />
+            <path
+              d="M9 4 Q10 4 10 6 Q10 8 8 8 H5.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+            />
             <polyline
-              points="5,6.5 3.5,8.5 5,10.5"
+              points="5.5,6.5 4,8 5.5,9.5"
               fill="none"
               stroke="currentColor"
               strokeWidth="1.3"
