@@ -31,8 +31,8 @@ export class ContactListContextMenu {
     return {
       label:
         count === 1
-          ? localized('Export VCard...')
-          : localized('Export %@ VCards...', String(count)),
+          ? localized('Export vCard...')
+          : localized('Export %@ vCards...', String(count)),
       click: () => exportContactsToFile(this.contacts),
     };
   }
@@ -52,6 +52,8 @@ export class ContactListContextMenu {
   }
 
   displayMenu() {
-    require('@electron/remote').Menu.buildFromTemplate(this.template()).popup({});
+    require('@electron/remote')
+      .Menu.buildFromTemplate(this.template())
+      .popup({});
   }
 }

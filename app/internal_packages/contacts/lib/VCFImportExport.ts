@@ -121,9 +121,16 @@ export function vcfStringToContacts(vcfContent: string, accountId: string): Cont
         );
       }
 
-      // Inject a UID if missing so the sync engine can track the contact.
-      if (!vcardString.match(/^UID:/im)) {
-        vcardString = vcardString.replace(/END:VCARD/i, `UID:${v4()}\r\nEND:VCARD`);
+      // Always replace (or inject) the UID with a fresh UUID. Imported contacts
+      // are treated as new items in the destination account; keeping the original
+      // UID would cause a conflict if a contact with that UID already exists on
+      // the CardDAV server (e.g. when the user exports and re-imports their own
+      // contacts), causing the sync engine to roll back the creation.
+      const newUID = v4();
+      if (vcardString.match(/^UID:/im)) {
+        vcardString = vcardString.replace(/^UID:.+\r\n/im, `UID:${newUID}\r\n`);
+      } else {
+        vcardString = vcardString.replace(/END:VCARD/i, `UID:${newUID}\r\nEND:VCARD`);
       }
 
       const info = { vcf: vcardString, href: '' };

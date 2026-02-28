@@ -122,7 +122,7 @@ class ContactDetailToolbarWithData extends React.Component<ContactDetailToolbarP
           </button>
           <button
             tabIndex={-1}
-            title={localized('Export VCard')}
+            title={localized('Export vCard')}
             className={`btn btn-toolbar ${actionSet.length === 0 && 'btn-disabled'}`}
             onClick={actionSet.length > 0 ? () => exportContactsToFile(actionSet) : undefined}
           >
@@ -142,9 +142,7 @@ class ContactDetailToolbarWithData extends React.Component<ContactDetailToolbarP
   }
 }
 
-export const ContactDetailToolbar: React.FunctionComponent<
-  ContactDetailToolbarProps
-> = ListensToFluxStore(
+export const ContactDetailToolbar: React.FunctionComponent<ContactDetailToolbarProps> = ListensToFluxStore(
   ({ listSource, editing, perspective }) => (
     <FocusContainer collection="contact">
       <ContactDetailToolbarWithData

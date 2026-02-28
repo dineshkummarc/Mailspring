@@ -1,4 +1,10 @@
-import { WorkspaceStore, ComponentRegistry, Actions, AccountStore, localized } from 'mailspring-exports';
+import {
+  WorkspaceStore,
+  ComponentRegistry,
+  Actions,
+  AccountStore,
+  localized,
+} from 'mailspring-exports';
 import { ContactPerspectivesList } from './ContactPerspectivesList';
 import { ContactDetailToolbar } from './ContactDetailToolbar';
 import { AddContactToolbar } from './AddContactToolbar';
@@ -19,11 +25,11 @@ function adjustMenus() {
       },
       { type: 'separator' },
       {
-        label: localized('Import VCards...'),
+        label: localized('Import vCards...'),
         command: 'contacts:import-vcf',
       },
       {
-        label: localized('Export All VCards...'),
+        label: localized('Export All vCards...'),
         command: 'contacts:export-vcf-all',
       },
       {
