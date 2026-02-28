@@ -136,7 +136,18 @@ export function vcfStringToContacts(vcfContent: string, accountId: string): Cont
         email = (parsed.data.emailAddresses?.[0] || { value: '' }).value;
       } catch (err) {
         console.warn('VCF import: failed to parse vCard:', err);
-        return null;
+      }
+
+      // Fallback: extract FN and EMAIL via regex if parsing didn't populate them.
+      // This handles VCard 4.0 contacts and other edge cases where the vcf library
+      // throws or fails to return name/email fields.
+      if (!name) {
+        const fnMatch = vcardString.match(/^FN:(.+)/im);
+        if (fnMatch) name = fnMatch[1].trim();
+      }
+      if (!email) {
+        const emailMatch = vcardString.match(/^EMAIL[^:]*:(.+)/im);
+        if (emailMatch) email = emailMatch[1].trim();
       }
 
       if (!name && !email) return null;
