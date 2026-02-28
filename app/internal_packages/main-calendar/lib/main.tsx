@@ -67,11 +67,6 @@ function adjustMenus() {
       },
       { type: 'separator' },
       {
-        label: localized('Show Calendar List'),
-        command: 'calendar:toggle-calendar-list',
-      },
-      { type: 'separator' },
-      {
         label: localized('Refresh Calendars'),
         command: 'calendar:refresh-calendars',
       },

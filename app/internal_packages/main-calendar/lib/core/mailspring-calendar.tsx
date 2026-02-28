@@ -737,10 +737,8 @@ export class MailspringCalendar extends React.Component<
         onNavigateNext={this._onNavigateNext}
         onNavigatePrevious={this._onNavigatePrevious}
         onDeleteEvent={this._onDeleteSelectedEvents}
-        onToggleCalendarList={this._onToggleCalendarList}
         onRefreshCalendars={this._onRefreshCalendars}
         hasSelectedEvents={this.state.selectedEvents.length > 0}
-        calendarListVisible={this.state.calendarListVisible}
       >
         <KeyCommandsRegion
           className="mailspring-calendar"

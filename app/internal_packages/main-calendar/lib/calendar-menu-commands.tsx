@@ -9,10 +9,8 @@ interface CalendarMenuCommandsProps {
   onNavigateNext: () => void;
   onNavigatePrevious: () => void;
   onDeleteEvent: () => void;
-  onToggleCalendarList: () => void;
   onRefreshCalendars: () => void;
   hasSelectedEvents: boolean;
-  calendarListVisible: boolean;
 }
 
 export class CalendarMenuCommands extends React.Component<CalendarMenuCommandsProps> {
@@ -27,7 +25,6 @@ export class CalendarMenuCommands extends React.Component<CalendarMenuCommandsPr
       'calendar:go-to-today': () => this.props.onChangeFocusedMoment(moment()),
       'calendar:navigate-next': this.props.onNavigateNext,
       'calendar:navigate-previous': this.props.onNavigatePrevious,
-      'calendar:toggle-calendar-list': this.props.onToggleCalendarList,
       'calendar:refresh-calendars': this.props.onRefreshCalendars,
     };
 
@@ -35,7 +32,7 @@ export class CalendarMenuCommands extends React.Component<CalendarMenuCommandsPr
       commands['core:delete-item'] = this.props.onDeleteEvent;
     }
 
-    const key = `calendar-menu-${this.props.hasSelectedEvents}-${this.props.calendarListVisible}`;
+    const key = `calendar-menu-${this.props.hasSelectedEvents}`;
 
     return (
       <BindGlobalCommands key={key} commands={commands}>

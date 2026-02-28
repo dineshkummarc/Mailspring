@@ -14,6 +14,5 @@
   "calendar:go-to-today": "mod+t",
   "calendar:navigate-next": "mod+right",
   "calendar:navigate-previous": "mod+left",
-  "calendar:toggle-calendar-list": "mod+alt+s",
   "calendar:refresh-calendars": "mod+shift+r"
 }
