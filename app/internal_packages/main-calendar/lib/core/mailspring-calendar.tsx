@@ -73,6 +73,7 @@ export interface MailspringCalendarViewProps extends EventRendererProps {
   onCalendarMouseUp: (args: CalendarEventArgs) => void;
   onCalendarMouseDown: (args: CalendarEventArgs) => void;
   onCalendarMouseMove: (args: CalendarEventArgs) => void;
+  onCalendarDoubleClick: (args: CalendarEventArgs) => void;
 
   // Drag-related props
   dragState: DragState | null;
@@ -239,6 +240,91 @@ export class MailspringCalendar extends React.Component<
 
   _onEventDoubleClick = (occurrence: EventOccurrence) => {
     this._openEventPopover(occurrence);
+  };
+
+  /**
+   * Handle double-click on the calendar background to create a new event.
+   * The CalendarEventArgs contains the time at the click position.
+   */
+  _onCalendarDoubleClick = (args: CalendarEventArgs) => {
+    if (args.time === null) {
+      return;
+    }
+
+    // Find writable calendars
+    const disabledCalendars = this.state.disabledCalendars || [];
+    const editableCalendars = this.state.calendars.filter(
+      (c) => !c.readOnly && !disabledCalendars.includes(c.id)
+    );
+    if (editableCalendars.length === 0) {
+      AppEnv.showErrorDialog(
+        localized(
+          "This account has no editable calendars. We can't create an event for you. Please make sure you have an editable calendar with your account provider."
+        )
+      );
+      return;
+    }
+
+    // Snap start time to 30-minute intervals for day/week view,
+    // or use 9 AM for month view / all-day area
+    let startUnix: number;
+    const isAllDay = args.containerType === 'all-day-area' || args.containerType === 'month-cell';
+
+    if (isAllDay) {
+      // For month/all-day, start at beginning of the day
+      const dayStart = moment(args.time * 1000)
+        .startOf('day')
+        .unix();
+      startUnix = dayStart;
+    } else {
+      // Snap to 30-minute intervals
+      const thirtyMinutes = 30 * 60;
+      startUnix = Math.floor(args.time / thirtyMinutes) * thirtyMinutes;
+    }
+
+    const endUnix = isAllDay ? startUnix + 86400 : startUnix + 3600; // 1 day or 1 hour
+
+    // Build a temporary EventOccurrence to open the popover in "new event" mode
+    const newEventOccurrence: EventOccurrence = {
+      id: `__new_event_${Date.now()}`,
+      start: startUnix,
+      end: endUnix,
+      title: '',
+      description: '',
+      location: '',
+      isAllDay,
+      isCancelled: false,
+      isPending: false,
+      isException: false,
+      organizer: null,
+      attendees: [],
+      accountId: editableCalendars[0].accountId,
+      calendarId: editableCalendars[0].id,
+    };
+
+    // Open the popover anchored near the mouse position
+    const originRect = new DOMRect(
+      (args.event as any).clientX - 1,
+      (args.event as any).clientY - 1,
+      2,
+      2
+    );
+
+    Actions.openPopover(
+      <CalendarEventPopover
+        event={newEventOccurrence}
+        isNewEvent
+        calendars={this.state.calendars}
+        accounts={this.state.accounts}
+        disabledCalendars={this.state.disabledCalendars}
+      />,
+      {
+        originRect,
+        direction: 'right',
+        fallbackDirection: 'left',
+        closeOnAppBlur: false,
+      }
+    );
   };
 
   _onEventFocused = (occurrence: EventOccurrence) => {
@@ -649,6 +735,7 @@ export class MailspringCalendar extends React.Component<
         onCalendarMouseUp={this._onCalendarMouseUp}
         onCalendarMouseDown={this._onCalendarMouseDown}
         onCalendarMouseMove={this._onCalendarMouseMove}
+        onCalendarDoubleClick={this._onCalendarDoubleClick}
         onEventClick={this._onEventClick}
         onEventDoubleClick={this._onEventDoubleClick}
         onEventFocused={this._onEventFocused}
