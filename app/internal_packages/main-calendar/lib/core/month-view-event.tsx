@@ -206,6 +206,33 @@ export class MonthViewEvent extends React.Component<MonthViewEventProps, MonthVi
         tabIndex={0}
       >
         <span className="month-view-event-title">{event.title}</span>
+        {event.isRecurring && !event.isCancelled && (
+          <svg className="recurring-icon" viewBox="0 0 12 12" width="9" height="9" aria-label="Recurring">
+            <path
+              d="M8.5 3.5H4A2.5 2.5 0 0 0 4 8.5H5M3.5 8.5H8A2.5 2.5 0 0 0 8 3.5H7"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+            />
+            <polyline
+              points="7,1.5 8.5,3.5 7,5.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+            <polyline
+              points="5,6.5 3.5,8.5 5,10.5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+        )}
       </div>
     );
   }

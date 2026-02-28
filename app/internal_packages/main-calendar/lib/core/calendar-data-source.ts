@@ -6,6 +6,7 @@ import {
   AndCompositeMatcher,
   OrCompositeMatcher,
   Contact,
+  ICSEventHelpers,
 } from 'mailspring-exports';
 import IcalExpander from 'ical-expander';
 
@@ -41,6 +42,8 @@ export interface EventOccurrence {
    */
   isPending: boolean;
   isException: boolean;
+  /** True if this event is part of a recurring series (has RRULE/RDATE) */
+  isRecurring: boolean;
   organizer: { email: string } | null;
   attendees: EventAttendee[];
 
@@ -117,6 +120,9 @@ export function occurrencesForEvents(
     // to avoid duplicates when exceptions are in the same ICS file
     const expandedStartTimes = new Set<number>();
 
+    // Check if the master event is recurring (has RRULE/RDATE)
+    const masterIsRecurring = master ? ICSEventHelpers.isRecurringEvent(master.ics) : false;
+
     // Expand the master event's ICS (handles exceptions in same ICS file)
     if (master) {
       try {
@@ -162,6 +168,7 @@ export function occurrencesForEvents(
             isCancelled: status.toUpperCase() === 'CANCELLED',
             isPending: isTentativeStatus || isAwaitingMyResponse,
             isException: !!item.component?.getFirstPropertyValue('recurrence-id'),
+            isRecurring: masterIsRecurring,
             organizer: item.organizer ? { email: item.organizer } : null,
             attendees,
           });
@@ -219,6 +226,7 @@ export function occurrencesForEvents(
             isCancelled: status.toUpperCase() === 'CANCELLED',
             isPending: isTentativeStatus || isAwaitingMyResponse,
             isException: true,
+            isRecurring: true, // Exceptions are always from recurring series
             organizer: item.organizer ? { email: item.organizer } : null,
             attendees,
           });
