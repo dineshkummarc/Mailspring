@@ -3,6 +3,7 @@ import ReactDOM from 'react-dom';
 import { InjectedComponentSet } from 'mailspring-component-kit';
 import { EventOccurrence } from './calendar-data-source';
 import { calcEventColors, extractMeetingDomain, formatEventTimeRange } from './calendar-helpers';
+import { RecurringIcon } from './calendar-icons';
 import { HitZone, ViewDirection } from './calendar-drag-types';
 import { detectHitZone, canDragEvent, formatDragPreviewTime } from './calendar-drag-utils';
 
@@ -387,40 +388,7 @@ export class CalendarEvent extends React.Component<CalendarEventProps, CalendarE
           {event.isCancelled ? <s>{event.title}</s> : event.title}
         </span>
         {this._renderEventDetails()}
-        {event.isRecurring && !event.isCancelled && !event.isException && (
-          <svg className="recurring-icon" viewBox="0 0 12 12" width="10" height="10" aria-label="Recurring">
-            <path
-              d="M3 8 Q2 8 2 6 Q2 4 4 4 H6.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-            />
-            <polyline
-              points="6.5,2.5 8,4 6.5,5.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-            <path
-              d="M9 4 Q10 4 10 6 Q10 8 8 8 H5.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-            />
-            <polyline
-              points="5.5,6.5 4,8 5.5,9.5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.3"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        )}
+        {event.isRecurring && !event.isCancelled && !event.isException && <RecurringIcon />}
         {event.isException && <span className="exception-tag">Modified</span>}
         <InjectedComponentSet
           className="event-injected-components"
