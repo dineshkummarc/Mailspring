@@ -146,7 +146,7 @@ export default class SwipeContainer extends React.Component<
   _onWheel = (e: React.WheelEvent<HTMLDivElement>) => {
     // Require that the wheel direction has a greater X component than Y component
     const ratio = Math.abs(e.deltaX) / (Math.abs(e.deltaY) || 1);
-    if (this.phase !== Phase.GestureConfirmed && ratio < 1.0) return;
+    if (this.phase !== Phase.GestureConfirmed && ratio < 1.3) return;
 
     let velocity = e.deltaX / 3;
     if (SwipeInverted) {
