@@ -6,7 +6,6 @@ import {
   AndCompositeMatcher,
   OrCompositeMatcher,
   Contact,
-  ICSEventHelpers,
 } from 'mailspring-exports';
 import IcalExpander from 'ical-expander';
 
@@ -120,14 +119,15 @@ export function occurrencesForEvents(
     // to avoid duplicates when exceptions are in the same ICS file
     const expandedStartTimes = new Set<number>();
 
-    // Check if the master event is recurring (has RRULE/RDATE)
-    const masterIsRecurring = master ? ICSEventHelpers.isRecurringEvent(master.ics) : false;
-
     // Expand the master event's ICS (handles exceptions in same ICS file)
     if (master) {
       try {
         const icalExpander = new IcalExpander({ ics: master.ics, maxIterations: 100 });
         const expanded = icalExpander.between(new Date(startUnix * 1000), new Date(endUnix * 1000));
+
+        // Check if the master event is recurring using the already-parsed ICAL data
+        // (avoids re-parsing the ICS string via ICSEventHelpers.isRecurringEvent)
+        const masterIsRecurring = icalExpander.events.some(e => e.isRecurring());
 
         [...expanded.events, ...expanded.occurrences].forEach((e, idx) => {
           const start = e.startDate.toJSDate().getTime() / 1000;
