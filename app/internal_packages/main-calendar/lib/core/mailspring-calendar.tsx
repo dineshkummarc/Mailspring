@@ -278,9 +278,9 @@ export class MailspringCalendar extends React.Component<
         .unix();
       startUnix = dayStart;
     } else {
-      // Snap to 30-minute intervals
+      // Snap to nearest 30-minute interval
       const thirtyMinutes = 30 * 60;
-      startUnix = Math.floor(args.time / thirtyMinutes) * thirtyMinutes;
+      startUnix = Math.round(args.time / thirtyMinutes) * thirtyMinutes;
     }
 
     const endUnix = isAllDay ? startUnix + 86400 : startUnix + 3600; // 1 day or 1 hour

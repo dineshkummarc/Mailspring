@@ -21,7 +21,7 @@ import { EventAttendeesInput } from './event-attendees-input';
 import { EventOccurrence, EventAttendee } from './calendar-data-source';
 import { EventPropertyRow } from './event-property-row';
 import { createCalendarEvent } from './calendar-helpers';
-import { CalendarColorPicker } from './calendar-color-picker';
+// CalendarColorPicker import removed - disabled until custom event colors are fully supported
 import { CalendarSelector } from './calendar-selector';
 import { LocationVideoInput } from './location-video-input';
 import { AllDayToggle } from './all-day-toggle';
@@ -227,7 +227,6 @@ export class CalendarEventPopover extends React.Component<
       repeat,
       alert,
       showAs,
-      calendarColor,
       timezone,
       showInvitees,
       showNotes,
@@ -238,7 +237,7 @@ export class CalendarEventPopover extends React.Component<
     return (
       <div className="calendar-event-popover editing" tabIndex={0}>
         <TabGroupRegion>
-          {/* Title row with color picker */}
+          {/* Title row */}
           <div className="title-wrapper">
             <input
               className="title"
@@ -247,10 +246,7 @@ export class CalendarEventPopover extends React.Component<
               value={title}
               onChange={(e) => this.updateField('title', e.target.value)}
             />
-            <CalendarColorPicker
-              color={calendarColor}
-              onChange={(color) => this.updateField('calendarColor', color)}
-            />
+            {/* CalendarColorPicker disabled until custom event colors are fully supported */}
           </div>
 
           {/* Calendar selector - only shown for new events */}
