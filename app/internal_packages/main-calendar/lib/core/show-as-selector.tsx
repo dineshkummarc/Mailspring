@@ -1,6 +1,6 @@
 import React from 'react';
 import { localized } from 'mailspring-exports';
-import { EventPropertyRow } from './event-property-row';
+import { EventPropertyRow, CalendarIcons } from './event-property-row';
 
 export type ShowAsOption = 'busy' | 'free' | 'tentative';
 
@@ -17,7 +17,7 @@ interface ShowAsSelectorProps {
 
 export const ShowAsSelector: React.FC<ShowAsSelectorProps> = ({ value, onChange }) => {
   return (
-    <EventPropertyRow label={localized('show as:')}>
+    <EventPropertyRow icon={<CalendarIcons.Availability />}>
       <select
         className="show-as-select"
         value={value}

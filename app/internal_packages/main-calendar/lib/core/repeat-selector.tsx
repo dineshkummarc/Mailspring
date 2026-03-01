@@ -1,6 +1,6 @@
 import React from 'react';
 import { localized } from 'mailspring-exports';
-import { EventPropertyRow } from './event-property-row';
+import { EventPropertyRow, CalendarIcons } from './event-property-row';
 
 export type RepeatOption = 'none' | 'daily' | 'weekly' | 'monthly' | 'yearly';
 
@@ -19,7 +19,7 @@ const REPEAT_OPTIONS: { value: RepeatOption; label: string }[] = [
 
 export const RepeatSelector: React.FC<RepeatSelectorProps> = ({ value, onChange }) => {
   return (
-    <EventPropertyRow label={localized('repeat:')}>
+    <EventPropertyRow icon={<CalendarIcons.Repeat />}>
       <select
         className="repeat-select"
         value={value}

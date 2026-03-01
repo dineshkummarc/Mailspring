@@ -19,8 +19,8 @@ import {
 } from 'mailspring-component-kit';
 import { EventAttendeesInput } from './event-attendees-input';
 import { EventOccurrence, EventAttendee } from './calendar-data-source';
-import { EventPropertyRow } from './event-property-row';
-import { createCalendarEvent } from './calendar-helpers';
+import { EventPropertyRow, CalendarIcons } from './event-property-row';
+import { createCalendarEvent, calcColor } from './calendar-helpers';
 // CalendarColorPicker import removed - disabled until custom event colors are fully supported
 import { CalendarSelector } from './calendar-selector';
 import { LocationVideoInput } from './location-video-input';
@@ -234,11 +234,19 @@ export class CalendarEventPopover extends React.Component<
 
     const notes = extractNotesFromDescription(description);
 
+    const calendarDotColor = this.props.isNewEvent
+      ? calcColor(this.state.selectedCalendarId)
+      : calcColor(this.props.event.calendarId);
+
     return (
       <div className="calendar-event-popover editing" tabIndex={0}>
         <TabGroupRegion>
-          {/* Title row */}
+          {/* Title row with calendar color dot */}
           <div className="title-wrapper">
+            <div
+              className="calendar-event-color-dot"
+              style={{ backgroundColor: calendarDotColor }}
+            />
             <input
               className="title"
               type="text"
@@ -246,10 +254,9 @@ export class CalendarEventPopover extends React.Component<
               value={title}
               onChange={(e) => this.updateField('title', e.target.value)}
             />
-            {/* CalendarColorPicker disabled until custom event colors are fully supported */}
           </div>
 
-          {/* Calendar selector - only shown for new events */}
+          {/* Calendar selector - only shown for new events, sits below title */}
           {this.props.isNewEvent && this.props.calendars && this.props.accounts && (
             <CalendarSelector
               calendars={this.props.calendars}
@@ -262,6 +269,8 @@ export class CalendarEventPopover extends React.Component<
             />
           )}
 
+          <div className="section-divider" />
+
           {/* Location with video call toggle */}
           <LocationVideoInput
             value={location}
@@ -271,14 +280,16 @@ export class CalendarEventPopover extends React.Component<
             }}
           />
 
+          <div className="section-divider" />
+
           {/* All-day toggle */}
           <AllDayToggle
             checked={allDay}
             onChange={(checked) => this.updateField('allDay', checked)}
           />
 
-          {/* Start/End times using property rows */}
-          <EventPropertyRow label={localized('starts:')}>
+          {/* Start/End times using clock icon on start, arrow on end */}
+          <EventPropertyRow icon={<CalendarIcons.Clock />}>
             <DatePicker
               value={start * 1000}
               onChange={(ts) => this.updateField('start', ts / 1000)}
@@ -291,7 +302,7 @@ export class CalendarEventPopover extends React.Component<
             )}
           </EventPropertyRow>
 
-          <EventPropertyRow label={localized('ends:')}>
+          <EventPropertyRow icon={<CalendarIcons.Arrow />}>
             <DatePicker value={end * 1000} onChange={(ts) => this.updateField('end', ts / 1000)} />
             {!allDay && (
               <TimePicker
@@ -307,6 +318,8 @@ export class CalendarEventPopover extends React.Component<
             onChange={(value) => this.updateField('timezone', value)}
           />
 
+          <div className="section-divider" />
+
           {/* Repeat selector */}
           <RepeatSelector value={repeat} onChange={(value) => this.updateField('repeat', value)} />
 
@@ -315,6 +328,8 @@ export class CalendarEventPopover extends React.Component<
 
           {/* Show as selector */}
           <ShowAsSelector value={showAs} onChange={(value) => this.updateField('showAs', value)} />
+
+          <div className="section-divider" />
 
           {/* Invitees section - collapsible */}
           {showInvitees ? (
@@ -337,6 +352,9 @@ export class CalendarEventPopover extends React.Component<
             </div>
           ) : (
             <div className="action-link" onClick={() => this.setState({ showInvitees: true })}>
+              <span className="action-link-icon">
+                <CalendarIcons.Person />
+              </span>
               {localized('Add Invitees')}
             </div>
           )}
@@ -359,6 +377,9 @@ export class CalendarEventPopover extends React.Component<
             </div>
           ) : (
             <div className="action-link" onClick={() => this.setState({ showNotes: true })}>
+              <span className="action-link-icon">
+                <CalendarIcons.Note />
+              </span>
               {localized('Add Notes or URL')}
             </div>
           )}
@@ -425,9 +446,12 @@ class CalendarEventPopoverUnenditable extends React.Component<{
 
     const notes = extractNotesFromDescription(description);
 
+    const calendarColor = calcColor(event.calendarId);
+
     return (
       <div className="calendar-event-popover" tabIndex={0}>
         <div className="title-wrapper">
+          <div className="calendar-event-color-dot" style={{ backgroundColor: calendarColor }} />
           <div className="title">{title}</div>
           <RetinaImg
             className="edit-icon"

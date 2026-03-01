@@ -1,6 +1,6 @@
 import React from 'react';
 import { localized, DateUtils } from 'mailspring-exports';
-import { EventPropertyRow } from './event-property-row';
+import { EventPropertyRow, CalendarIcons } from './event-property-row';
 import moment from 'moment-timezone';
 
 export interface TimeZoneSelectorProps {
@@ -55,7 +55,7 @@ export const TimeZoneSelector: React.FC<TimeZoneSelectorProps> = ({ value, onCha
     : [value, ...COMMON_TIMEZONES];
 
   return (
-    <EventPropertyRow label={localized('time zone:')}>
+    <EventPropertyRow icon={<CalendarIcons.Globe />}>
       <select
         className="timezone-select"
         value={value}

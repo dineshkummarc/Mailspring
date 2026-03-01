@@ -1,6 +1,7 @@
 import React from 'react';
 import { RetinaImg } from 'mailspring-component-kit';
 import { localized } from 'mailspring-exports';
+import { CalendarIcons } from './event-property-row';
 
 interface LocationVideoInputProps {
   value: string;                      // Current location value
@@ -25,6 +26,9 @@ export const LocationVideoInput: React.FC<LocationVideoInputProps> = ({
 
   return (
     <div className="location-video-input">
+      <div className="location-row-icon">
+        <CalendarIcons.MapPin />
+      </div>
       <input
         type="text"
         className="location-input"

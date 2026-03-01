@@ -1,7 +1,7 @@
 import React from 'react';
 import Switch from '../../../../src/components/switch';
 import { localized } from 'mailspring-exports';
-import { EventPropertyRow } from './event-property-row';
+import { EventPropertyRow, CalendarIcons } from './event-property-row';
 
 interface AllDayToggleProps {
   checked: boolean;
@@ -10,8 +10,9 @@ interface AllDayToggleProps {
 
 export const AllDayToggle: React.FC<AllDayToggleProps> = ({ checked, onChange }) => {
   return (
-    <EventPropertyRow label={localized('all-day:')}>
+    <EventPropertyRow icon={<CalendarIcons.Sun />}>
       <Switch checked={checked} onChange={() => onChange(!checked)} />
+      <span className="all-day-label">{localized('All-day')}</span>
     </EventPropertyRow>
   );
 };

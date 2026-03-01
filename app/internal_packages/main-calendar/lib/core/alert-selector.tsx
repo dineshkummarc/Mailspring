@@ -1,6 +1,6 @@
 import React from 'react';
 import { localized } from 'mailspring-exports';
-import { EventPropertyRow } from './event-property-row';
+import { EventPropertyRow, CalendarIcons } from './event-property-row';
 
 export type AlertTiming =
   | 'none'
@@ -34,7 +34,7 @@ const ALERT_OPTIONS: { value: AlertTiming; label: string }[] = [
 
 export const AlertSelector: React.FC<AlertSelectorProps> = ({ value, onChange }) => {
   return (
-    <EventPropertyRow label={localized('alert:')}>
+    <EventPropertyRow icon={<CalendarIcons.Bell />}>
       <select
         className="alert-select"
         value={value}

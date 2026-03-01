@@ -3,37 +3,99 @@
 @import 'ui-mixins';
 
 .fixed-popover .calendar-event-popover {
-  color: fadeout(@text-color, 20%);
+  color: @text-color;
   background-color: @background-primary;
   display: flex;
   flex-direction: column;
   font-size: @font-size-small;
   max-height: 95vh;
-  width: 300px;
+  width: 380px;
 
+  // ============================================
+  // Title row - shared by read and edit modes
+  // ============================================
+  .title-wrapper {
+    display: flex;
+    align-items: center;
+    padding: 13px @padding-base-horizontal 10px;
+    gap: 8px;
+    border-bottom: 1px solid @border-color-divider;
+    flex-shrink: 0;
+
+    .calendar-event-color-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      flex-shrink: 0;
+      border: 1px solid fade(@black, 15%);
+    }
+
+    .title {
+      flex: 1;
+      font-size: @font-size-larger;
+      font-weight: @font-weight-semi-bold;
+      color: @text-color;
+      padding-right: 4px;
+    }
+  }
+
+  .edit-icon {
+    background-color: @text-color-very-subtle;
+    cursor: pointer;
+    flex-shrink: 0;
+
+    &:hover {
+      background-color: @text-color;
+    }
+  }
+
+  // Edit mode: title becomes a borderless input
+  &.editing .title-wrapper {
+    padding-top: 11px;
+
+    .title {
+      border: none;
+      background: transparent;
+      font-size: @font-size-larger;
+      font-weight: @font-weight-semi-bold;
+      padding: 2px 0;
+
+      &:focus {
+        outline: none;
+      }
+
+      &::placeholder {
+        color: @text-color-very-subtle;
+        font-weight: @font-weight-normal;
+      }
+    }
+  }
+
+  // ============================================
+  // Thin divider between row groups
+  // ============================================
+  .section-divider {
+    height: 1px;
+    background-color: @border-color-divider;
+    margin: 3px 0;
+    flex-shrink: 0;
+  }
+
+  // ============================================
+  // Read-mode location, date, invitees, notes
+  // ============================================
   .location {
-    color: @text-color-very-subtle;
+    display: flex;
+    align-items: flex-start;
+    color: @text-color-subtle;
     padding: @padding-base-vertical @padding-base-horizontal;
     word-wrap: break-word;
     flex-shrink: 0;
   }
-  .title-wrapper {
-    color: @text-color-inverse;
-    display: flex;
-    font-size: @font-size-larger;
-    background-color: @accent-primary;
-    border-top-left-radius: @border-radius-base;
-    border-top-right-radius: @border-radius-base;
+
+  .section {
+    border-top: 1px solid @border-color-divider;
     padding: @padding-base-vertical @padding-base-horizontal;
-    align-items: center;
-    flex-shrink: 0;
-    .title {
-      padding-right: @padding-base-vertical;
-    }
-  }
-  .edit-icon {
-    background-color: @text-color-inverse;
-    cursor: pointer;
   }
 
   .invitees.section {
@@ -106,68 +168,56 @@
       color: white;
     }
   }
+
   .description {
     white-space: pre-line;
     word-wrap: break-word;
   }
+
   .description .scroll-region-content {
     max-height: 250px;
     position: relative;
   }
+
   .label {
     color: @text-color-very-subtle;
   }
-  .section {
-    border-top: 1px solid @border-color-divider;
-    padding: @padding-base-vertical @padding-base-horizontal;
-  }
-  .row.time {
-    .time-picker {
-      text-align: center;
-    }
-    .time-picker-wrap {
-      margin-right: 5px;
-
-      .time-options {
-        z-index: 10; // So the time pickers show over
-      }
-    }
-  }
-
-  .event-popover-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 8px;
-    padding: @padding-base-vertical @padding-base-horizontal;
-    border-top: 1px solid @border-color-divider;
-    flex-shrink: 0;
-  }
 
   // ============================================
-  // Event Property Row - Two-column grid layout
+  // Event Property Row - icon + value layout
+  // No internal borders; sections use .section-divider
   // ============================================
   .event-property-row {
     display: flex;
     align-items: center;
-    min-height: 32px;
-    padding: @padding-small-vertical @padding-base-horizontal;
-    border-bottom: 1px solid @border-color-divider;
+    min-height: 30px;
+    padding: 3px @padding-base-horizontal;
 
     &:hover {
-      background-color: fade(@background-secondary, 50%);
+      background-color: fade(@background-secondary, 70%);
     }
 
-    &:last-child {
-      border-bottom: none;
+    .row-icon-area {
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @text-color-very-subtle;
+      flex-shrink: 0;
     }
 
+    // Fallback text label (when no icon provided)
     .row-label {
-      width: 80px;
-      text-align: right;
-      padding-right: @padding-base-horizontal;
       color: @text-color-very-subtle;
       font-size: @font-size-small;
-      flex-shrink: 0;
+      white-space: nowrap;
+    }
+
+    // Label shown next to the all-day switch
+    .all-day-label {
+      color: @text-color;
+      font-size: @font-size-small;
+      margin-left: 4px;
     }
 
     .row-value {
@@ -178,115 +228,98 @@
       align-items: center;
       gap: @padding-base-vertical;
 
+      // Ghost-style selects: no border, no background, just clickable text
       select {
         background: transparent;
         border: none;
         color: @text-color;
         font-size: @font-size-small;
         cursor: pointer;
-        padding: 2px 4px;
-        border-radius: @border-radius-small;
+        padding: 2px 0;
 
         &:hover {
-          background-color: @background-secondary;
+          color: @accent-primary;
         }
 
         &:focus {
           outline: none;
-          box-shadow: 0 0 0 2px fade(@accent-primary, 40%);
         }
       }
 
-      // Fix time picker dropdown z-index
+      // Ghost-style date picker
+      .date-picker {
+        cursor: pointer;
+
+        .day-text {
+          color: @text-color;
+          font-size: @font-size-small;
+          white-space: nowrap;
+          border-radius: @border-radius-small;
+          padding: 1px 3px;
+          margin: -1px -3px;
+
+          &:hover {
+            color: @accent-primary;
+            background-color: fade(@accent-primary, 10%);
+          }
+
+          &.focused {
+            color: @accent-primary;
+            background-color: fade(@accent-primary, 10%);
+          }
+        }
+
+        &:focus {
+          outline: none;
+        }
+      }
+
+      // Ghost-style time picker
       .time-picker-wrap {
         .time-options {
           z-index: 200;
         }
-      }
-    }
-  }
 
-  // ============================================
-  // Calendar Color Picker
-  // ============================================
-  .calendar-color-picker {
-    position: relative;
-    margin-left: auto;
+        input.time-picker {
+          border: none;
+          background: transparent;
+          color: @text-color;
+          font-size: @font-size-small;
+          width: 68px;
+          padding: 1px 3px;
+          margin: -1px -3px;
+          border-radius: @border-radius-small;
+          cursor: pointer;
 
-    .color-picker-trigger {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-      cursor: pointer;
-      padding: 4px;
-      border-radius: @border-radius-small;
+          &:hover {
+            color: @accent-primary;
+            background-color: fade(@accent-primary, 10%);
+          }
 
-      &:hover {
-        background-color: fade(@text-color-inverse, 20%);
-      }
-    }
-
-    .color-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: @border-radius-small;
-      border: 1px solid fade(@black, 20%);
-    }
-
-    .color-picker-chevron {
-      font-size: 10px;
-      color: @text-color-inverse;
-      opacity: 0.8;
-    }
-
-    .color-picker-dropdown {
-      position: absolute;
-      top: 100%;
-      right: 0;
-      margin-top: 4px;
-      background: @background-primary;
-      border-radius: @border-radius-base;
-      box-shadow: @standard-shadow, @shadow-border;
-      padding: 8px;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 6px;
-      z-index: 100;
-    }
-
-    .color-option {
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      cursor: pointer;
-      border: 2px solid transparent;
-      transition: transform 0.1s ease;
-
-      &:hover {
-        transform: scale(1.15);
-      }
-
-      &.selected {
-        border-color: @text-color;
-        box-shadow: inset 0 0 0 2px @background-primary;
+          &:focus {
+            outline: none;
+            color: @accent-primary;
+            background-color: fade(@accent-primary, 10%);
+          }
+        }
       }
     }
   }
 
   // ============================================
   // Calendar Selector (for new events)
+  // Sits below the title; indented to align with row values
   // ============================================
   .calendar-selector {
     display: flex;
     align-items: center;
-    padding: @padding-small-vertical @padding-base-horizontal;
-    border-bottom: 1px solid @border-color-divider;
+    padding: 2px @padding-base-horizontal 4px (28px + @padding-base-horizontal);
 
     .calendar-selector-dot {
-      width: 10px;
-      height: 10px;
+      width: 8px;
+      height: 8px;
       border-radius: 50%;
-      margin-right: 8px;
+      margin-right: 6px;
       flex-shrink: 0;
       border: 1px solid fade(@black, 15%);
     }
@@ -295,32 +328,40 @@
       flex: 1;
       background: transparent;
       border: none;
-      color: @text-color;
-      font-size: @font-size-small;
+      color: @text-color-subtle;
+      font-size: @font-size-smaller;
       cursor: pointer;
-      padding: 2px 4px;
-      border-radius: @border-radius-small;
+      padding: 1px 0;
       min-width: 0;
 
       &:hover {
-        background-color: @background-secondary;
+        color: @text-color;
       }
 
       &:focus {
         outline: none;
-        box-shadow: 0 0 0 2px fade(@accent-primary, 40%);
       }
     }
   }
 
   // ============================================
-  // Location Video Input
+  // Location / Video input row
+  // Uses same icon-area width as .event-property-row
   // ============================================
   .location-video-input {
     display: flex;
     align-items: center;
-    padding: @padding-small-vertical @padding-base-horizontal;
-    border-bottom: 1px solid @border-color-divider;
+    min-height: 30px;
+    padding: 3px @padding-base-horizontal;
+
+    .location-row-icon {
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: @text-color-very-subtle;
+      flex-shrink: 0;
+    }
 
     .location-input {
       flex: 1;
@@ -328,7 +369,7 @@
       background: transparent;
       color: @text-color;
       font-size: @font-size-small;
-      padding: 4px 0;
+      padding: 2px 0;
 
       &:focus {
         outline: none;
@@ -340,8 +381,8 @@
     }
 
     .video-toggle {
-      width: 28px;
-      height: 28px;
+      width: 26px;
+      height: 26px;
       display: flex;
       align-items: center;
       justify-content: center;
@@ -367,71 +408,44 @@
   }
 
   // ============================================
-  // Edit Mode Title - cleaner styling
-  // ============================================
-  &.editing {
-    .title-wrapper {
-      background-color: transparent;
-      border-bottom: 1px solid @border-color-divider;
-
-      .title {
-        flex: 1;
-        border: none;
-        background: transparent;
-        color: @text-color;
-        font-size: @font-size-larger;
-        font-weight: @font-weight-medium;
-        padding: 4px 0;
-
-        &:focus {
-          outline: none;
-        }
-
-        &::placeholder {
-          color: @text-color-very-subtle;
-        }
-      }
-    }
-  }
-
-  // ============================================
   // Action Links (Add Invitees, Add Notes)
+  // Match .event-property-row icon layout
   // ============================================
   .action-link {
-    display: block;
-    padding: @padding-small-vertical @padding-base-horizontal;
+    display: flex;
+    align-items: center;
+    min-height: 30px;
+    padding: 3px @padding-base-horizontal;
     color: @text-color-very-subtle;
     font-size: @font-size-small;
     cursor: pointer;
-    border-bottom: 1px solid @border-color-divider;
+
+    .action-link-icon {
+      width: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
 
     &:hover {
       color: @text-color;
-      background-color: fade(@background-secondary, 50%);
-    }
-
-    &:last-child {
-      border-bottom: none;
+      background-color: fade(@background-secondary, 70%);
     }
   }
 
   // ============================================
-  // Expanded sections (when action links clicked)
+  // Expanded sections (Invitees / Notes fields)
   // ============================================
   .expanded-section {
     padding: @padding-small-vertical @padding-base-horizontal;
-    border-bottom: 1px solid @border-color-divider;
-
-    // Fix double border: remove bottom border when followed by actions
-    &:last-of-type {
-      border-bottom: none;
-    }
 
     .section-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
       margin-bottom: @padding-small-vertical;
+      padding-left: 28px;
 
       .section-title {
         color: @text-color-very-subtle;
@@ -463,6 +477,7 @@
       font-size: @font-size-small;
       padding: @padding-small-vertical @padding-small-horizontal;
       resize: vertical;
+      box-sizing: border-box;
 
       &:focus {
         outline: none;
@@ -476,16 +491,23 @@
     }
 
     .tokenizing-field .tokenizing-field-input {
-        position: relative;
-        margin-left: 0;
-        padding-top: 0;
-        padding-bottom: 0;
+      position: relative;
+      margin-left: 0;
+      padding-top: 0;
+      padding-bottom: 0;
     }
   }
 
-  // Action links should not have border when last before actions
-  .action-link:last-of-type {
-    border-bottom: none;
+  // ============================================
+  // Footer action buttons
+  // ============================================
+  .event-popover-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding: @padding-base-vertical @padding-base-horizontal;
+    border-top: 1px solid @border-color-divider;
+    flex-shrink: 0;
   }
 }
 
