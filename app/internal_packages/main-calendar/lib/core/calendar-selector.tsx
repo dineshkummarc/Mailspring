@@ -1,6 +1,6 @@
 import _ from 'underscore';
 import React from 'react';
-import { Calendar, Account, localized } from 'mailspring-exports';
+import { Calendar, Account } from 'mailspring-exports';
 import { calcColor } from './calendar-helpers';
 
 interface CalendarSelectorProps {

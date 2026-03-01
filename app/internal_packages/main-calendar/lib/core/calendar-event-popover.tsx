@@ -174,7 +174,17 @@ export class CalendarEventPopover extends React.Component<
   };
 
   _createNewEvent = async (): Promise<void> => {
-    const { title, start, end, allDay, selectedCalendarId, selectedAccountId } = this.state;
+    const {
+      title,
+      start,
+      end,
+      allDay,
+      location,
+      description,
+      attendees,
+      selectedCalendarId,
+      selectedAccountId,
+    } = this.state;
 
     const summary = title || localized('New Event');
 
@@ -187,6 +197,12 @@ export class CalendarEventPopover extends React.Component<
       end: new Date(end * 1000),
       isAllDay: allDay,
       timezone: DateUtils.timeZone,
+      description: description || undefined,
+      location: location || undefined,
+      attendees:
+        attendees && attendees.length > 0
+          ? attendees.map((a) => ({ email: a.email, name: a.name }))
+          : undefined,
     });
 
     const event = new Event({
