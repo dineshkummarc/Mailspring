@@ -1,7 +1,6 @@
-import _ from 'underscore';
 import React from 'react';
 import { Calendar, Account } from 'mailspring-exports';
-import { calcColor } from './calendar-helpers';
+import { calcColor, getEditableCalendars } from './calendar-helpers';
 
 interface CalendarSelectorProps {
   calendars: Calendar[];
@@ -11,52 +10,52 @@ interface CalendarSelectorProps {
   onChange: (calendarId: string, accountId: string) => void;
 }
 
-export class CalendarSelector extends React.Component<CalendarSelectorProps> {
-  static displayName = 'CalendarSelector';
+export function CalendarSelector({
+  calendars,
+  accounts,
+  disabledCalendars,
+  selectedCalendarId,
+  onChange,
+}: CalendarSelectorProps) {
+  const editableCalendars = getEditableCalendars(calendars, disabledCalendars);
 
-  _onChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  // Group by account
+  const calsByAccountId: Record<string, Calendar[]> = {};
+  for (const cal of editableCalendars) {
+    (calsByAccountId[cal.accountId] ??= []).push(cal);
+  }
+
+  const selectedColor = calcColor(selectedCalendarId);
+
+  const handleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const calendarId = e.target.value;
-    const calendar = this.props.calendars.find((c) => c.id === calendarId);
+    const calendar = calendars.find((c) => c.id === calendarId);
     if (calendar) {
-      this.props.onChange(calendar.id, calendar.accountId);
+      onChange(calendar.id, calendar.accountId);
     }
   };
 
-  render() {
-    const { calendars, accounts, disabledCalendars, selectedCalendarId } = this.props;
+  return (
+    <div className="calendar-selector">
+      <div className="calendar-selector-dot" style={{ backgroundColor: selectedColor }} />
+      <select value={selectedCalendarId} onChange={handleChange}>
+        {Object.keys(calsByAccountId).map((accountId) => {
+          const cals = calsByAccountId[accountId];
+          const account = accounts.find((a) => a.id === accountId);
+          const accountLabel = account ? account.label : accountId;
 
-    // Filter to only writable, enabled calendars
-    const editableCalendars = calendars.filter(
-      (c) => !c.readOnly && !disabledCalendars.includes(c.id)
-    );
-
-    // Group by account
-    const calsByAccountId = _.groupBy(editableCalendars, 'accountId');
-
-    // Get the selected calendar's color for the indicator dot
-    const selectedColor = calcColor(selectedCalendarId);
-
-    return (
-      <div className="calendar-selector">
-        <div className="calendar-selector-dot" style={{ backgroundColor: selectedColor }} />
-        <select value={selectedCalendarId} onChange={this._onChange}>
-          {Object.keys(calsByAccountId).map((accountId) => {
-            const cals = calsByAccountId[accountId];
-            const account = accounts.find((a) => a.id === accountId);
-            const accountLabel = account ? account.label : accountId;
-
-            return (
-              <optgroup key={accountId} label={accountLabel}>
-                {cals.map((cal) => (
-                  <option key={cal.id} value={cal.id}>
-                    {cal.name}
-                  </option>
-                ))}
-              </optgroup>
-            );
-          })}
-        </select>
-      </div>
-    );
-  }
+          return (
+            <optgroup key={accountId} label={accountLabel}>
+              {cals.map((cal) => (
+                <option key={cal.id} value={cal.id}>
+                  {cal.name}
+                </option>
+              ))}
+            </optgroup>
+          );
+        })}
+      </select>
+    </div>
+  );
 }
+CalendarSelector.displayName = 'CalendarSelector';

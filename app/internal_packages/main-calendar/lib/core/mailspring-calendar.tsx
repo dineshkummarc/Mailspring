@@ -27,7 +27,12 @@ import { CalendarSourceList } from './calendar-source-list';
 import { CalendarDataSource, EventOccurrence, FocusedEventInfo } from './calendar-data-source';
 import { CalendarView } from './calendar-constants';
 import { CalendarEmptyState } from './calendar-empty-state';
-import { setCalendarColors, getColorCacheVersion } from './calendar-helpers';
+import {
+  setCalendarColors,
+  getColorCacheVersion,
+  getEditableCalendars,
+  showNoEditableCalendarsError,
+} from './calendar-helpers';
 import { Disposable } from 'rx-core';
 import { CalendarEventArgs } from './calendar-event-container';
 import { CalendarEventPopover } from './calendar-event-popover';
@@ -252,16 +257,12 @@ export class MailspringCalendar extends React.Component<
     }
 
     // Find writable calendars
-    const disabledCalendars = this.state.disabledCalendars || [];
-    const editableCalendars = this.state.calendars.filter(
-      (c) => !c.readOnly && !disabledCalendars.includes(c.id)
+    const editableCalendars = getEditableCalendars(
+      this.state.calendars,
+      this.state.disabledCalendars || []
     );
     if (editableCalendars.length === 0) {
-      AppEnv.showErrorDialog(
-        localized(
-          "This account has no editable calendars. We can't create an event for you. Please make sure you have an editable calendar with your account provider."
-        )
-      );
+      showNoEditableCalendarsError();
       return;
     }
 
@@ -303,12 +304,7 @@ export class MailspringCalendar extends React.Component<
     };
 
     // Open the popover anchored near the mouse position
-    const originRect = new DOMRect(
-      (args.event as any).clientX - 1,
-      (args.event as any).clientY - 1,
-      2,
-      2
-    );
+    const originRect = new DOMRect(args.mouseEvent.clientX - 1, args.mouseEvent.clientY - 1, 2, 2);
 
     Actions.openPopover(
       <CalendarEventPopover

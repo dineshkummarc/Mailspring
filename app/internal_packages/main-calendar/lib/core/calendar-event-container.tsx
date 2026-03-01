@@ -5,7 +5,8 @@ import { EventOccurrence } from './calendar-data-source';
 import { CalendarContainerType } from './calendar-drag-types';
 
 export interface CalendarEventArgs {
-  event?: EventOccurrence;
+  /** The underlying DOM mouse event */
+  mouseEvent: MouseEvent;
   /** Unix timestamp at mouse position, or null if not over a valid time container */
   time: number | null;
   x: number | null;
@@ -68,14 +69,23 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
     this._runPropsHandler('onCalendarDoubleClick', event);
   };
 
-  _runPropsHandler(name, event) {
+  _runPropsHandler(name: keyof CalendarEventContainerProps, event: MouseEvent) {
     const propsFn = this.props[name];
     if (!propsFn) {
       return;
     }
     const { time, x, y, width, height, containerType } = this._dataFromMouseEvent(event);
     try {
-      propsFn({ event, time, x, y, width, height, mouseIsDown: this._mouseIsDown, containerType });
+      propsFn({
+        mouseEvent: event,
+        time,
+        x,
+        y,
+        width,
+        height,
+        mouseIsDown: this._mouseIsDown,
+        containerType,
+      });
     } catch (error) {
       AppEnv.reportError(error);
     }

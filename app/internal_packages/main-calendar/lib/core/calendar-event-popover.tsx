@@ -7,9 +7,6 @@ import {
   DatabaseStore,
   DateUtils,
   Event,
-  ICSEventHelpers,
-  SyncbackEventTask,
-  TaskQueue,
   localized,
   Autolink,
 } from 'mailspring-exports';
@@ -23,6 +20,7 @@ import {
 import { EventAttendeesInput } from './event-attendees-input';
 import { EventOccurrence, EventAttendee } from './calendar-data-source';
 import { EventPropertyRow } from './event-property-row';
+import { createCalendarEvent } from './calendar-helpers';
 import { CalendarColorPicker } from './calendar-color-picker';
 import { CalendarSelector } from './calendar-selector';
 import { LocationVideoInput } from './location-video-input';
@@ -76,7 +74,7 @@ export class CalendarEventPopover extends React.Component<
   private attendeesInputRef = React.createRef<EventAttendeesInput>();
   private notesTextareaRef = React.createRef<HTMLTextAreaElement>();
 
-  constructor(props) {
+  constructor(props: CalendarEventPopoverProps) {
     super(props);
     const { description, start, end, location, attendees, title, isAllDay } = this.props.event;
 
@@ -186,17 +184,15 @@ export class CalendarEventPopover extends React.Component<
       selectedAccountId,
     } = this.state;
 
-    const summary = title || localized('New Event');
+    Actions.closePopover();
 
-    // Generate ICS data for the new event
-    const icsuid = ICSEventHelpers.generateUID();
-    const ics = ICSEventHelpers.createICSString({
-      uid: icsuid,
-      summary,
+    await createCalendarEvent({
+      summary: title || localized('New Event'),
       start: new Date(start * 1000),
       end: new Date(end * 1000),
       isAllDay: allDay,
-      timezone: DateUtils.timeZone,
+      calendarId: selectedCalendarId,
+      accountId: selectedAccountId,
       description: description || undefined,
       location: location || undefined,
       attendees:
@@ -204,32 +200,6 @@ export class CalendarEventPopover extends React.Component<
           ? attendees.map((a) => ({ email: a.email, name: a.name }))
           : undefined,
     });
-
-    const event = new Event({
-      calendarId: selectedCalendarId,
-      accountId: selectedAccountId,
-      ics,
-      icsuid,
-      recurrenceStart: start,
-      recurrenceEnd: end,
-    });
-    event.title = summary;
-
-    // Create and queue the task to save the event
-    const task = SyncbackEventTask.forCreating({
-      event,
-      calendarId: selectedCalendarId,
-      accountId: selectedAccountId,
-    });
-    Actions.queueTask(task);
-
-    Actions.closePopover();
-
-    // Wait for the task to complete (synced to server)
-    await TaskQueue.waitForPerformRemote(task);
-
-    // Focus the calendar on the newly created event
-    Actions.focusCalendarEvent({ id: event.id, start: event.recurrenceStart });
   };
 
   // If on the hour, formats as "3 PM", else formats as "3:15 PM"
