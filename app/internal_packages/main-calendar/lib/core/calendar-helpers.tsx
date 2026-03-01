@@ -315,6 +315,7 @@ export interface CreateCalendarEventOptions {
   description?: string;
   location?: string;
   attendees?: Array<{ email: string; name?: string }>;
+  recurrenceRule?: string;
 }
 
 /**
@@ -333,6 +334,7 @@ export async function createCalendarEvent(options: CreateCalendarEventOptions): 
     description: options.description,
     location: options.location,
     attendees: options.attendees,
+    recurrenceRule: options.recurrenceRule,
   });
 
   const event = new Event({

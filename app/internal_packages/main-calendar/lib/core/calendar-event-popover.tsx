@@ -9,6 +9,8 @@ import {
   Event,
   localized,
   Autolink,
+  ICSEventHelpers,
+  SyncbackEventTask,
 } from 'mailspring-exports';
 import {
   DatePicker,
@@ -31,7 +33,42 @@ import { ShowAsSelector, ShowAsOption } from './show-as-selector';
 import { EventPopoverActions } from './event-popover-actions';
 import { TimeZoneSelector } from './timezone-selector';
 import { parseEventIdFromOccurrence } from './calendar-drag-utils';
-import { modifyEventWithRecurringSupport } from './recurring-event-actions';
+
+/**
+ * Convert a RepeatOption UI value to an RRULE string (or null for 'none').
+ */
+function repeatOptionToRRule(option: RepeatOption): string | null {
+  switch (option) {
+    case 'daily':
+      return 'FREQ=DAILY';
+    case 'weekly':
+      return 'FREQ=WEEKLY';
+    case 'monthly':
+      return 'FREQ=MONTHLY';
+    case 'yearly':
+      return 'FREQ=YEARLY';
+    default:
+      return null;
+  }
+}
+
+/**
+ * Convert an ICS recurrence frequency string to a RepeatOption UI value.
+ */
+function frequencyToRepeatOption(frequency: string | undefined): RepeatOption {
+  switch (frequency?.toUpperCase()) {
+    case 'DAILY':
+      return 'daily';
+    case 'WEEKLY':
+      return 'weekly';
+    case 'MONTHLY':
+      return 'monthly';
+    case 'YEARLY':
+      return 'yearly';
+    default:
+      return 'none';
+  }
+}
 
 interface CalendarEventPopoverProps {
   event: EventOccurrence;
@@ -126,8 +163,20 @@ export class CalendarEventPopover extends React.Component<
     }
   }
 
-  onEdit = () => {
-    this.setState({ editing: true });
+  onEdit = async () => {
+    // Load the actual recurrence info from the event's ICS data
+    let repeat: RepeatOption = 'none';
+    try {
+      const eventId = parseEventIdFromOccurrence(this.props.event.id);
+      const event = await DatabaseStore.find<Event>(Event, eventId);
+      if (event) {
+        const recurrenceInfo = ICSEventHelpers.getRecurrenceInfo(event.ics);
+        repeat = frequencyToRepeatOption(recurrenceInfo.frequency);
+      }
+    } catch (e) {
+      // Fall back to 'none' if we can't read the event
+    }
+    this.setState({ editing: true, repeat });
   };
 
   getStartMoment = () => moment(this.state.start * 1000);
@@ -150,22 +199,51 @@ export class CalendarEventPopover extends React.Component<
       return;
     }
 
-    // Use the shared utility for event modification
-    const result = await modifyEventWithRecurringSupport(
-      {
-        event,
-        originalOccurrenceStart: this.props.event.start,
-        newStart: this.state.start,
-        newEnd: this.state.end,
-        isAllDay: this.state.allDay,
-      },
-      'edit',
-      this.state.title
+    // Capture original state for undo BEFORE any modifications
+    const undoData = {
+      ics: event.ics,
+      recurrenceStart: event.recurrenceStart,
+      recurrenceEnd: event.recurrenceEnd,
+    };
+
+    // Apply all property changes to the ICS
+    let ics = event.ics;
+
+    // Update title
+    ics = ICSEventHelpers.updateEventProperty(
+      ics,
+      'summary',
+      this.state.title || localized('New Event')
     );
 
-    if (result.cancelled) {
-      return; // User cancelled, don't close the popover
-    }
+    // Update location
+    ics = ICSEventHelpers.updateEventProperty(ics, 'location', this.state.location || '');
+
+    // Update description
+    ics = ICSEventHelpers.updateEventProperty(ics, 'description', this.state.description || '');
+
+    // Update times
+    ics = ICSEventHelpers.updateEventTimes(ics, {
+      start: this.state.start,
+      end: this.state.end,
+      isAllDay: this.state.allDay,
+    });
+
+    // Update recurrence rule
+    const rrule = repeatOptionToRRule(this.state.repeat);
+    ics = ICSEventHelpers.updateRecurrenceRule(ics, rrule);
+
+    event.ics = ics;
+    event.recurrenceStart = this.state.start;
+    event.recurrenceEnd = this.state.end;
+
+    // Queue syncback task with undo support
+    const task = SyncbackEventTask.forUpdating({
+      event,
+      undoData,
+      description: localized('Edit event'),
+    });
+    Actions.queueTask(task);
 
     this.setState({ editing: false });
     Actions.closePopover();
@@ -180,6 +258,7 @@ export class CalendarEventPopover extends React.Component<
       location,
       description,
       attendees,
+      repeat,
       selectedCalendarId,
       selectedAccountId,
     } = this.state;
@@ -199,6 +278,7 @@ export class CalendarEventPopover extends React.Component<
         attendees && attendees.length > 0
           ? attendees.map((a) => ({ email: a.email, name: a.name }))
           : undefined,
+      recurrenceRule: repeatOptionToRRule(repeat) || undefined,
     });
   };
 

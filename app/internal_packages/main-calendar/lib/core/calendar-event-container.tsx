@@ -23,6 +23,7 @@ interface CalendarEventContainerProps {
   onCalendarMouseMove: (args: CalendarEventArgs) => void;
   onCalendarMouseUp: (args: CalendarEventArgs) => void;
   onCalendarDoubleClick?: (args: CalendarEventArgs) => void;
+  onCalendarClick?: (args: CalendarEventArgs) => void;
 }
 
 export class CalendarEventContainer extends React.Component<CalendarEventContainerProps> {
@@ -61,6 +62,12 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
 
   _onCalendarMouseMove = (event) => {
     this._runPropsHandler('onCalendarMouseMove', event);
+  };
+
+  _onCalendarClick = (event) => {
+    // Only fire for background clicks (not on events).
+    // CalendarEvent and MonthViewEvent components stop propagation of their own clicks.
+    this._runPropsHandler('onCalendarClick', event);
   };
 
   _onCalendarDoubleClick = (event) => {
@@ -222,6 +229,7 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
         onMouseUp={this._onCalendarMouseUp}
         onMouseDown={this._onCalendarMouseDown}
         onMouseMove={this._onCalendarMouseMove}
+        onClick={this._onCalendarClick}
         onDoubleClick={this._onCalendarDoubleClick}
       >
         {this.props.children}

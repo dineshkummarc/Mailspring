@@ -66,9 +66,7 @@ export interface RecurrenceInfo {
  */
 export function generateUID(): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random()
-    .toString(36)
-    .substring(2, 15);
+  const random = Math.random().toString(36).substring(2, 15);
   return `${timestamp}-${random}@mailspring`;
 }
 
@@ -568,6 +566,36 @@ export function addExclusionDate(ics: string, occurrenceStart: number, isAllDay:
   if (sequence !== null) {
     vevent.updatePropertyWithValue('sequence', (parseInt(String(sequence), 10) || 0) + 1);
   }
+
+  return root.toString();
+}
+
+/**
+ * Sets, updates, or removes the recurrence rule (RRULE) on an event's ICS data.
+ *
+ * @param ics - The original ICS string
+ * @param rruleString - The RRULE string (e.g., 'FREQ=DAILY'), or null/empty to remove
+ * @returns The modified ICS string
+ */
+export function updateRecurrenceRule(ics: string, rruleString: string | null): string {
+  const ical = getICAL();
+  const { root } = parseICSString(ics);
+
+  const vevent = root.name === 'vevent' ? root : root.getFirstSubcomponent('vevent');
+  if (!vevent) {
+    throw new Error('Invalid ICS: no VEVENT component found');
+  }
+
+  // Remove existing RRULE(s)
+  vevent.removeAllProperties('rrule');
+
+  // Add new RRULE if provided
+  if (rruleString) {
+    vevent.addPropertyWithValue('rrule', ical.Recur.fromString(rruleString));
+  }
+
+  // Update DTSTAMP to indicate modification
+  vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
 
   return root.toString();
 }

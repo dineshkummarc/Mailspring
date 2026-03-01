@@ -236,6 +236,7 @@ export class WeekView extends React.Component<
           onCalendarMouseUp={this.props.onCalendarMouseUp}
           onCalendarMouseDown={this.props.onCalendarMouseDown}
           onCalendarMouseMove={this.props.onCalendarMouseMove}
+          onCalendarClick={this.props.onCalendarClick}
           onCalendarDoubleClick={this.props.onCalendarDoubleClick}
         >
           <div className="top-banner">

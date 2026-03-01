@@ -292,7 +292,16 @@ export class CalendarEvent extends React.Component<CalendarEventProps, CalendarE
         {meetingDomain && (
           <span className="event-meeting-link">
             <svg className="detail-icon" viewBox="0 0 12 12" width="10" height="10">
-              <rect x="1" y="3" width="7" height="6" rx="1" fill="none" stroke="currentColor" strokeWidth="1.3" />
+              <rect
+                x="1"
+                y="3"
+                width="7"
+                height="6"
+                rx="1"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.3"
+              />
               <path
                 d="M8 4.5 L11 3 V9 L8 7.5"
                 fill="none"
@@ -378,7 +387,10 @@ export class CalendarEvent extends React.Component<CalendarEventProps, CalendarE
         tabIndex={0}
         style={styles}
         className={classNames}
-        onClick={(e) => onClick(e, event)}
+        onClick={(e) => {
+          e.stopPropagation();
+          onClick(e, event);
+        }}
         onDoubleClick={(e) => {
           e.stopPropagation();
           onDoubleClick(event);

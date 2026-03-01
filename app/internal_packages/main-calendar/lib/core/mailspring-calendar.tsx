@@ -80,6 +80,7 @@ export interface MailspringCalendarViewProps extends EventRendererProps {
   onCalendarMouseUp: (args: CalendarEventArgs) => void;
   onCalendarMouseDown: (args: CalendarEventArgs) => void;
   onCalendarMouseMove: (args: CalendarEventArgs) => void;
+  onCalendarClick: (args: CalendarEventArgs) => void;
   onCalendarDoubleClick: (args: CalendarEventArgs) => void;
 
   // Drag-related props
@@ -241,10 +242,25 @@ export class MailspringCalendar extends React.Component<
       next = [event];
     }
 
+    // Close any open popover when clicking an event (e.g., if another event's
+    // popover was open, it should close when selecting a different event)
+    Actions.closePopover();
+
     this.setState({
       selectedEvents: next,
       focusedEvent: null,
     });
+  };
+
+  /**
+   * Handle single click on the calendar background (not on an event).
+   * Deselects all events and closes any open popover.
+   */
+  _onCalendarClick = (_args: CalendarEventArgs) => {
+    if (this.state.selectedEvents.length > 0) {
+      this.setState({ selectedEvents: [], focusedEvent: null });
+    }
+    Actions.closePopover();
   };
 
   _onEventDoubleClick = (occurrence: EventOccurrence) => {
@@ -801,6 +817,7 @@ export class MailspringCalendar extends React.Component<
         onCalendarMouseUp={this._onCalendarMouseUp}
         onCalendarMouseDown={this._onCalendarMouseDown}
         onCalendarMouseMove={this._onCalendarMouseMove}
+        onCalendarClick={this._onCalendarClick}
         onCalendarDoubleClick={this._onCalendarDoubleClick}
         onEventClick={this._onEventClick}
         onEventDoubleClick={this._onEventDoubleClick}
