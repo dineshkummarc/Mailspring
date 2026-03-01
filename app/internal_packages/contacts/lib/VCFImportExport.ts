@@ -30,7 +30,7 @@ export function contactToVCFString(contact: Contact): string {
       honorificPrefix = '',
       honorificSuffix = '',
     } = data.name;
-    card.set('n', `${familyName};${givenName};${honorificPrefix};${honorificSuffix}`);
+    card.set('n', `${familyName};${givenName};;${honorificPrefix};${honorificSuffix}`);
     card.set('fn', data.name.displayName || formatDisplayName(data.name));
   } else if (contact.name) {
     card.set('fn', contact.name);
