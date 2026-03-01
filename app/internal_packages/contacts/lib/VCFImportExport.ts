@@ -126,12 +126,14 @@ export function vcfStringToContacts(vcfContent: string, accountId: string): Cont
       // UID would cause a conflict if a contact with that UID already exists on
       // the CardDAV server (e.g. when the user exports and re-imports their own
       // contacts), causing the sync engine to roll back the creation.
+      //
+      // Strip first, then always inject before END:VCARD. Using [^\r\n]* avoids
+      // having to match the line terminator (which may be \r\n, \n, or absent at
+      // EOF), and [ \t]* avoids the horizontal-whitespace-only match that \s* would
+      // incorrectly extend across blank lines in files with inter-property gaps.
       const newUID = v4();
-      if (vcardString.match(/^UID:/im)) {
-        vcardString = vcardString.replace(/^UID:.+\r\n/im, `UID:${newUID}\r\n`);
-      } else {
-        vcardString = vcardString.replace(/END:VCARD/i, `UID:${newUID}\r\nEND:VCARD`);
-      }
+      vcardString = vcardString.replace(/^[ \t]*UID:[^\r\n]*/im, '');
+      vcardString = vcardString.replace(/END:VCARD/i, `UID:${newUID}\r\nEND:VCARD`);
 
       const info = { vcf: vcardString, href: '' };
       let name = '';
