@@ -4,9 +4,13 @@ import {
   Actions,
   Calendar,
   Account,
+  Contact,
+  CalendarUtils,
   DatabaseStore,
   DateUtils,
   Event,
+  ICSParticipantStatus,
+  SyncbackEventTask,
   localized,
   Autolink,
 } from 'mailspring-exports';
@@ -383,11 +387,24 @@ export class CalendarEventPopover extends React.Component<
   }
 }
 
-class CalendarEventPopoverUnenditable extends React.Component<{
-  event: EventOccurrence;
-  onEdit: () => void;
-}> {
+interface CalendarEventPopoverUnenditableState {
+  attachments: Array<{ uri: string; title: string }>;
+  rsvpInflight: ICSParticipantStatus | null;
+  eventModel: Event | null;
+}
+
+class CalendarEventPopoverUnenditable extends React.Component<
+  { event: EventOccurrence; onEdit: () => void },
+  CalendarEventPopoverUnenditableState
+> {
   descriptionRef = React.createRef<HTMLDivElement>();
+  _mounted = false;
+
+  state: CalendarEventPopoverUnenditableState = {
+    attachments: [],
+    rsvpInflight: null,
+    eventModel: null,
+  };
 
   renderTime() {
     const startMoment = moment(this.props.event.start * 1000);
@@ -403,8 +420,41 @@ class CalendarEventPopoverUnenditable extends React.Component<{
     );
   }
 
-  componentDidMount() {
+  async componentDidMount() {
+    this._mounted = true;
     this.autolink();
+
+    const eventId = parseEventIdFromOccurrence(this.props.event.id);
+    const eventModel = await DatabaseStore.find<Event>(Event, eventId);
+    if (!this._mounted || !eventModel) return;
+
+    this.setState({ eventModel });
+
+    // Parse ATTACH properties from ICS for the Documents section
+    try {
+      const { event: icsEvent } = CalendarUtils.parseICSString(eventModel.ics);
+      const attachProps: any[] = icsEvent.component.getAllProperties('attach');
+      const attachments = attachProps
+        .map((prop: any) => {
+          const value = prop.getFirstValue();
+          const uri = typeof value === 'string' ? value : null;
+          if (!uri || (!uri.startsWith('http://') && !uri.startsWith('https://'))) return null;
+          const filename: string | null = prop.getParameter('filename') || null;
+          const title = filename || uri;
+          return { uri, title };
+        })
+        .filter(Boolean) as Array<{ uri: string; title: string }>;
+
+      if (this._mounted) {
+        this.setState({ attachments });
+      }
+    } catch (err) {
+      console.error('Failed to parse ICS attachments:', err);
+    }
+  }
+
+  componentWillUnmount() {
+    this._mounted = false;
   }
 
   componentDidUpdate() {
@@ -417,6 +467,119 @@ class CalendarEventPopoverUnenditable extends React.Component<{
       async: false,
       telAggressiveMatch: true,
     });
+  }
+
+  _onRsvp = async (status: ICSParticipantStatus) => {
+    const { rsvpInflight, eventModel } = this.state;
+    if (rsvpInflight) return; // prevent double-clicks
+
+    this.setState({ rsvpInflight: status });
+
+    try {
+      const dbEvent =
+        eventModel ||
+        (await DatabaseStore.find<Event>(Event, parseEventIdFromOccurrence(this.props.event.id)));
+
+      if (!dbEvent) {
+        this.setState({ rsvpInflight: null });
+        return;
+      }
+
+      const { root, event: icsEvent } = CalendarUtils.parseICSString(dbEvent.ics);
+      const me = CalendarUtils.selfParticipant(icsEvent, dbEvent.accountId);
+      if (!me) {
+        this.setState({ rsvpInflight: null });
+        return;
+      }
+
+      const undoData = {
+        ics: dbEvent.ics,
+        recurrenceStart: dbEvent.recurrenceStart,
+        recurrenceEnd: dbEvent.recurrenceEnd,
+      };
+
+      me.component.setParameter('partstat', status);
+      const updatedIcs = root.toString();
+
+      const updatedEvent = dbEvent.clone();
+      updatedEvent.ics = updatedIcs;
+
+      Actions.queueTask(
+        SyncbackEventTask.forUpdating({
+          event: updatedEvent,
+          undoData,
+          description: localized('RSVP'),
+        })
+      );
+    } catch (err) {
+      console.error('Failed to update RSVP:', err);
+    }
+
+    if (this._mounted) {
+      this.setState({ rsvpInflight: null });
+    }
+  };
+
+  _renderDocuments() {
+    const { attachments } = this.state;
+    if (attachments.length === 0) return null;
+
+    return (
+      <div className="section documents-section">
+        <div className="label">{localized('Documents')}:</div>
+        <div className="documents-list">
+          {attachments.map((attach, idx) => (
+            <a key={idx} className="document-link" href={attach.uri}>
+              {attach.title}
+            </a>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  _renderMyRsvp() {
+    const { event } = this.props;
+    const { rsvpInflight } = this.state;
+
+    const myAttendee = event.attendees.find(
+      a => a.email && new Contact({ email: a.email }).isMe()
+    );
+    if (!myAttendee) return null;
+
+    const currentStatus = (myAttendee.partstat || 'NEEDS-ACTION') as ICSParticipantStatus;
+
+    const actions: [ICSParticipantStatus, string][] = [
+      ['ACCEPTED', localized('Accept')],
+      ['TENTATIVE', localized('Maybe')],
+      ['DECLINED', localized('Decline')],
+    ];
+
+    return (
+      <div className="section rsvp-section">
+        <div className="label">{localized('My RSVP')}:</div>
+        <div className="rsvp-buttons">
+          {actions.map(([actionStatus, actionLabel]) => (
+            <button
+              key={actionStatus}
+              className={`btn-rsvp ${currentStatus === actionStatus ? actionStatus.toLowerCase() : ''}`}
+              onClick={() => this._onRsvp(actionStatus)}
+              disabled={!!rsvpInflight}
+            >
+              {rsvpInflight === actionStatus ? (
+                <RetinaImg
+                  width={14}
+                  name="sending-spinner.gif"
+                  mode={RetinaImg.Mode.ContentPreserve}
+                />
+              ) : (
+                actionLabel
+              )}
+            </button>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   render() {
@@ -479,6 +642,8 @@ class CalendarEventPopoverUnenditable extends React.Component<{
             <div ref={this.descriptionRef}>{notes}</div>
           </div>
         </ScrollRegion>
+        {this._renderDocuments()}
+        {this._renderMyRsvp()}
       </div>
     );
   }

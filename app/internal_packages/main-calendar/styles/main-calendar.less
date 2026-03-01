@@ -487,6 +487,98 @@
   .action-link:last-of-type {
     border-bottom: none;
   }
+
+  // ============================================
+  // Documents Section
+  // ============================================
+  .documents-section {
+    .label {
+      margin-bottom: 4px;
+    }
+
+    .documents-list {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .document-link {
+      display: inline-flex;
+      align-items: center;
+      color: @accent-primary;
+      text-decoration: none;
+      font-size: @font-size-small;
+      word-break: break-all;
+
+      &::before {
+        content: '📎';
+        margin-right: 4px;
+        flex-shrink: 0;
+      }
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
+  }
+
+  // ============================================
+  // RSVP Section
+  // ============================================
+  .rsvp-section {
+    .label {
+      margin-bottom: 6px;
+    }
+
+    .rsvp-buttons {
+      display: flex;
+      gap: 6px;
+
+      .btn-rsvp {
+        flex: 1;
+        padding: 4px 8px;
+        border-radius: @border-radius-small;
+        border: 1px solid @border-color-divider;
+        background: @background-secondary;
+        color: @text-color;
+        font-size: @font-size-small;
+        cursor: pointer;
+        text-align: center;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 26px;
+        transition: background 0.1s ease;
+
+        &:hover:not(:disabled) {
+          background: mix(@background-primary, @text-color, 92%);
+        }
+
+        &:disabled {
+          opacity: 0.6;
+          cursor: default;
+        }
+
+        &.accepted {
+          background: @color-success;
+          color: @white;
+          border-color: @color-success;
+        }
+
+        &.declined {
+          background: @color-error;
+          color: @white;
+          border-color: @color-error;
+        }
+
+        &.tentative {
+          background: @gray-light;
+          color: @white;
+          border-color: @gray-light;
+        }
+      }
+    }
+  }
 }
 
 .quick-event-popover {
