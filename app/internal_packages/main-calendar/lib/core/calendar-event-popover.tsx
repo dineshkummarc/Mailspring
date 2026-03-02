@@ -143,13 +143,12 @@ export class CalendarEventPopover extends React.Component<
       return;
     }
 
-    // Extract the real event ID from the occurrence ID (format: `${eventId}-e${idx}`)
-    const eventId = parseEventIdFromOccurrence(this.props.event.id);
-
-    // Fetch the actual Event from the database
-    const event = await DatabaseStore.find<Event>(Event, eventId);
+    // Prefer the Event model already embedded in the occurrence; fall back to a DB lookup
+    const event =
+      this.props.event.eventModel ||
+      (await DatabaseStore.find<Event>(Event, parseEventIdFromOccurrence(this.props.event.id)));
     if (!event) {
-      console.error(`Could not find event with id ${eventId} to update`);
+      console.error(`Could not find event to update`);
       this.setState({ editing: false });
       return;
     }
@@ -387,24 +386,13 @@ export class CalendarEventPopover extends React.Component<
   }
 }
 
-interface CalendarEventPopoverUnenditableState {
-  attachments: Array<{ uri: string; title: string }>;
-  rsvpInflight: ICSParticipantStatus | null;
-  eventModel: Event | null;
-}
-
 class CalendarEventPopoverUnenditable extends React.Component<
   { event: EventOccurrence; onEdit: () => void },
-  CalendarEventPopoverUnenditableState
+  { rsvpInflight: ICSParticipantStatus | null }
 > {
   descriptionRef = React.createRef<HTMLDivElement>();
-  _mounted = false;
 
-  state: CalendarEventPopoverUnenditableState = {
-    attachments: [],
-    rsvpInflight: null,
-    eventModel: null,
-  };
+  state = { rsvpInflight: null as ICSParticipantStatus | null };
 
   renderTime() {
     const startMoment = moment(this.props.event.start * 1000);
@@ -420,41 +408,8 @@ class CalendarEventPopoverUnenditable extends React.Component<
     );
   }
 
-  async componentDidMount() {
-    this._mounted = true;
+  componentDidMount() {
     this.autolink();
-
-    const eventId = parseEventIdFromOccurrence(this.props.event.id);
-    const eventModel = await DatabaseStore.find<Event>(Event, eventId);
-    if (!this._mounted || !eventModel) return;
-
-    this.setState({ eventModel });
-
-    // Parse ATTACH properties from ICS for the Documents section
-    try {
-      const { event: icsEvent } = CalendarUtils.parseICSString(eventModel.ics);
-      const attachProps: any[] = icsEvent.component.getAllProperties('attach');
-      const attachments = attachProps
-        .map((prop: any) => {
-          const value = prop.getFirstValue();
-          const uri = typeof value === 'string' ? value : null;
-          if (!uri || (!uri.startsWith('http://') && !uri.startsWith('https://'))) return null;
-          const filename: string | null = prop.getParameter('filename') || null;
-          const title = filename || uri;
-          return { uri, title };
-        })
-        .filter(Boolean) as Array<{ uri: string; title: string }>;
-
-      if (this._mounted) {
-        this.setState({ attachments });
-      }
-    } catch (err) {
-      console.error('Failed to parse ICS attachments:', err);
-    }
-  }
-
-  componentWillUnmount() {
-    this._mounted = false;
   }
 
   componentDidUpdate() {
@@ -469,22 +424,35 @@ class CalendarEventPopoverUnenditable extends React.Component<
     });
   }
 
-  _onRsvp = async (status: ICSParticipantStatus) => {
-    const { rsvpInflight, eventModel } = this.state;
-    if (rsvpInflight) return; // prevent double-clicks
+  _attachmentsFromEvent(event: EventOccurrence): Array<{ uri: string; title: string }> {
+    if (!event.eventModel?.ics) return [];
+    try {
+      const { event: icsEvent } = CalendarUtils.parseICSString(event.eventModel.ics);
+      const attachProps: any[] = icsEvent.component.getAllProperties('attach');
+      return attachProps
+        .map((prop: any) => {
+          const value = prop.getFirstValue();
+          const uri = typeof value === 'string' ? value : null;
+          if (!uri || (!uri.startsWith('http://') && !uri.startsWith('https://'))) return null;
+          const filename: string | null = prop.getParameter('filename') || null;
+          return { uri, title: filename || uri };
+        })
+        .filter(Boolean) as Array<{ uri: string; title: string }>;
+    } catch (err) {
+      console.error('Failed to parse ICS attachments:', err);
+      return [];
+    }
+  }
+
+  _onRsvp = (status: ICSParticipantStatus) => {
+    if (this.state.rsvpInflight) return;
+
+    const dbEvent = this.props.event.eventModel;
+    if (!dbEvent) return;
 
     this.setState({ rsvpInflight: status });
 
     try {
-      const dbEvent =
-        eventModel ||
-        (await DatabaseStore.find<Event>(Event, parseEventIdFromOccurrence(this.props.event.id)));
-
-      if (!dbEvent) {
-        this.setState({ rsvpInflight: null });
-        return;
-      }
-
       const { root, event: icsEvent } = CalendarUtils.parseICSString(dbEvent.ics);
       const me = CalendarUtils.selfParticipant(icsEvent, dbEvent.accountId);
       if (!me) {
@@ -515,13 +483,11 @@ class CalendarEventPopoverUnenditable extends React.Component<
       console.error('Failed to update RSVP:', err);
     }
 
-    if (this._mounted) {
-      this.setState({ rsvpInflight: null });
-    }
+    this.setState({ rsvpInflight: null });
   };
 
   _renderDocuments() {
-    const { attachments } = this.state;
+    const attachments = this._attachmentsFromEvent(this.props.event);
     if (attachments.length === 0) return null;
 
     return (

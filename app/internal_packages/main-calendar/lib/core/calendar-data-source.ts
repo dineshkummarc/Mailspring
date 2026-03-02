@@ -50,6 +50,8 @@ export interface EventOccurrence {
   isDragPreview?: boolean;
   /** If this is a preview, the ID of the original event being dragged */
   originalEventId?: string;
+  /** The source Event model this occurrence was expanded from. Not present on drag previews or new events. */
+  eventModel?: Event;
 }
 
 // Minimal type for focusing/highlighting an event on the calendar
@@ -171,6 +173,7 @@ export function occurrencesForEvents(
             isRecurring: masterIsRecurring,
             organizer: item.organizer ? { email: item.organizer } : null,
             attendees,
+            eventModel: master,
           });
         });
       } catch (err) {
@@ -229,6 +232,7 @@ export function occurrencesForEvents(
             isRecurring: true, // Exceptions are always from recurring series
             organizer: item.organizer ? { email: item.organizer } : null,
             attendees,
+            eventModel: exception,
           });
         });
       } catch (err) {
