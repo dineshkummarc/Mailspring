@@ -163,7 +163,12 @@ export default class MailspringWindow extends EventEmitter {
 
     loadSettings.initialPath = pathToOpen;
 
-    const stats = fs.statSyncNoException(pathToOpen);
+    let stats: fs.Stats | false = false;
+    try {
+      stats = fs.statSync(pathToOpen);
+    } catch (e) {
+      // path doesn't exist
+    }
     if (stats && stats.isFile && stats.isFile()) {
       loadSettings.initialPath = path.dirname(pathToOpen);
     }

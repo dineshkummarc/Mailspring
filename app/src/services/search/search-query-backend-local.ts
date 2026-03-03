@@ -71,8 +71,9 @@ class MatchQueryExpressionVisitor extends SearchQueryExpressionVisitor {
   }
 
   visitText(node) {
-    // TODO: Should we do anything about possible SQL injection attacks?
-    this._result = node.token.s;
+    // Sanitize the token to prevent FTS query injection. Strip characters
+    // that have special meaning in SQLite FTS (double quotes, asterisks, etc.)
+    this._result = node.token.s.replace(/["*^(){}:]/g, '');
   }
 
   visitUnread(node) {
@@ -245,11 +246,8 @@ class StructuredSearchQueryVisitor extends SearchQueryExpressionVisitor {
   }
 
   visitHasAttachment(/* node */) {
-    /*
-    TODO BG: On Dec. 18th 2018 I fixed the sync engine to populate the `hasAttachment` column
-    with a valid attachment count. After DB CURRENT_VERSION > 4, we should switch to using
-    that field rather than this slow LIKE clause.
-    */
+    // Note: The sync engine populates attachmentCount in the data blob, but the
+    // column is not queryable in the schema. This LIKE clause is a workaround.
     this._result = `(\`${this._className}\`.\`data\` NOT LIKE '%"attachmentCount":0%')`;
   }
 
