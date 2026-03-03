@@ -191,7 +191,7 @@ export class Matcher {
       case 'startsWith': {
         const escapedVal =
           typeof val === 'string'
-            ? val.replace(/'/g, singleQuoteEscapeSequence).replace(/[%_]/g, c => `\\${c}`)
+            ? val.replace(/'/g, singleQuoteEscapeSequence).replace(/[\\%_]/g, c => `\\${c}`)
             : val;
         return `\`${klass.name}\`.\`${this.attr.tableColumn}\` LIKE '${escapedVal}%' ESCAPE '\\'`;
       }
