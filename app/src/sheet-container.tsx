@@ -52,7 +52,7 @@ export default class SheetContainer extends React.Component<
     };
   }
 
-  _onColumnSizeChanged = sheet => {
+  _onColumnSizeChanged = (sheet) => {
     const toolbar = this._toolbarComponents[sheet.props.depth];
     if (toolbar) {
       toolbar.recomputeLayout();
@@ -93,7 +93,7 @@ export default class SheetContainer extends React.Component<
     const components = this.state.stack.map((sheet, index) => (
       <Toolbar
         data={sheet}
-        ref={cm => {
+        ref={(cm) => {
           this._toolbarComponents[index] = cm;
         }}
         key={`${index}:${sheet.id}:toolbar`}

@@ -130,7 +130,7 @@ class ToolbarWindowControls extends React.Component<Record<string, unknown>, { a
     this.setState({ alt: AppEnv.keymaps.getIsAltKeyDown() });
   };
 
-  _onMaximize = event => {
+  _onMaximize = (event) => {
     if (process.platform === 'darwin' && !event.altKey) {
       AppEnv.setFullScreen(!AppEnv.isFullScreen());
     } else {
@@ -376,7 +376,7 @@ export default class Toolbar extends React.Component<ToolbarProps, ToolbarState>
   }
 
   _flexboxForComponents(components) {
-    const elements = components.map(Component => (
+    const elements = components.map((Component) => (
       <Component key={Component.displayName} {...this.props} />
     ));
     return (

@@ -125,7 +125,7 @@ class MessageList extends React.Component<Record<string, unknown>, MessageListSt
   };
 
   _lastMessage() {
-    return (this.state.messages || []).filter(m => !m.draft).pop();
+    return (this.state.messages || []).filter((m) => !m.draft).pop();
   }
 
   // Returns either "reply" or "reply-all"
@@ -194,7 +194,7 @@ class MessageList extends React.Component<Record<string, unknown>, MessageListSt
       messages = [...messages].reverse();
     }
 
-    messages.forEach(message => {
+    messages.forEach((message) => {
       if (message.type === 'minifiedBundle') {
         elements.push(this._renderMinifiedBundle(message));
         return;
@@ -316,7 +316,7 @@ class MessageList extends React.Component<Record<string, unknown>, MessageListSt
     }
   };
 
-  _onScrollByPage = direction => {
+  _onScrollByPage = (direction) => {
     const height = (ReactDOM.findDOMNode(this._messageWrapEl) as HTMLElement).clientHeight;
     this._messageWrapEl.scrollTop += height * direction;
   };
@@ -432,7 +432,7 @@ class MessageList extends React.Component<Record<string, unknown>, MessageListSt
             className={wrapClass}
             scrollbarTickProvider={SearchableComponentStore}
             scrollTooltipComponent={MessageListScrollTooltip}
-            ref={el => {
+            ref={(el) => {
               this._messageWrapEl = el;
             }}
           >
