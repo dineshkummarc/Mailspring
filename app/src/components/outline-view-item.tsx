@@ -1,5 +1,4 @@
 /* eslint global-require:0 */
-/* eslint jsx-a11y/tabindex-no-positive:0 */
 
 import _ from 'underscore';
 import { Utils, localized } from 'mailspring-exports';

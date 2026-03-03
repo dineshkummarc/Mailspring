@@ -1,7 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import { RetinaImg, CreateButtonGroup, BindGlobalCommands } from 'mailspring-component-kit';
+import { RetinaImg, BindGlobalCommands, RovingTabIndexToolbar } from 'mailspring-component-kit';
 import {
   localized,
   Actions,
@@ -449,17 +449,34 @@ class ThreadArrowButton extends React.Component<
   }
 }
 
-export const FlagButtons = CreateButtonGroup(
-  'FlagButtons',
-  [ToggleStarredButton, HiddenToggleImportantButton, ToggleUnreadButton],
-  { order: -103 }
+export const FlagButtons = (props: { items: Thread[] }) => (
+  <RovingTabIndexToolbar
+    label={localized('Flag Actions')}
+    className="button-group"
+    style={{ order: -103 } as React.CSSProperties}
+  >
+    <ToggleStarredButton {...props} />
+    <HiddenToggleImportantButton {...props} />
+    <ToggleUnreadButton {...props} />
+  </RovingTabIndexToolbar>
 );
+FlagButtons.displayName = 'FlagButtons';
+(FlagButtons as any).containerRequired = false;
 
-export const MoveButtons = CreateButtonGroup(
-  'MoveButtons',
-  [ArchiveButton, MarkAsSpamButton, HiddenGenericRemoveButton, TrashButton],
-  { order: -107 }
+export const MoveButtons = (props: { items: Thread[] }) => (
+  <RovingTabIndexToolbar
+    label={localized('Move Actions')}
+    className="button-group"
+    style={{ order: -107 } as React.CSSProperties}
+  >
+    <ArchiveButton {...props} />
+    <MarkAsSpamButton {...props} />
+    <HiddenGenericRemoveButton {...props} />
+    <TrashButton {...props} />
+  </RovingTabIndexToolbar>
 );
+MoveButtons.displayName = 'MoveButtons';
+(MoveButtons as any).containerRequired = false;
 
 export const DownButton = () => {
   const getStateFromStores = () => {

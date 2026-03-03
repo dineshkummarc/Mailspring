@@ -1,4 +1,3 @@
-/* eslint jsx-a11y/tabindex-no-positive: 0 */
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { localized, PropTypes, Actions, Message } from 'mailspring-exports';
@@ -69,7 +68,7 @@ class TemplatePopover extends React.Component<{ headerMessageId: string }> {
     const headerComponents = [
       <input
         type="text"
-        tabIndex={1}
+        autoFocus
         key="textfield"
         className="search"
         value={this.state.searchValue}

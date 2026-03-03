@@ -8,6 +8,7 @@ import { localized, isRTL, Actions, ComponentRegistry, WorkspaceStore } from 'ma
 import { SheetDeclaration } from './flux/stores/workspace-store';
 import { Flexbox } from './components/flexbox';
 import { RetinaImg } from './components/retina-img';
+import { RovingTabIndexToolbar } from './components/roving-tab-index-toolbar';
 import * as Utils from './flux/models/utils';
 import { Disposable } from 'rx-core';
 
@@ -149,11 +150,14 @@ class ToolbarWindowControls extends React.Component<Record<string, unknown>, { a
     }
 
     return (
-      <div className={`toolbar-window-controls alt-${this.state.alt}`}>
+      <RovingTabIndexToolbar
+        label={localized('Window Controls')}
+        className={`toolbar-window-controls alt-${this.state.alt}`}
+      >
         <button tabIndex={-1} className="close" aria-label={localized('Close window')} onClick={() => AppEnv.close()} />
         <button tabIndex={-1} className="minimize" aria-label={localized('Minimize window')} onClick={() => AppEnv.minimize()} />
         <button tabIndex={-1} className="maximize" aria-label={localized('Maximize window')} onClick={this._onMaximize} />
-      </div>
+      </RovingTabIndexToolbar>
     );
   }
 }
@@ -178,7 +182,7 @@ class ToolbarMenuControl extends React.Component {
 
     return (
       <div className="toolbar-menu-control">
-        <button tabIndex={-1} className="btn btn-toolbar" aria-label={localized('Application menu')} onClick={this._onOpenMenu}>
+        <button tabIndex={0} className="btn btn-toolbar" aria-label={localized('Application menu')} onClick={this._onOpenMenu}>
           <RetinaImg name="windows-menu-icon.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </div>

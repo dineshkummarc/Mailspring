@@ -330,7 +330,7 @@
       font-size: @font-size-small;
       padding: 4px 0;
 
-      &:focus {
+      &:focus:not(:focus-visible) {
         outline: none;
       }
 
@@ -383,7 +383,7 @@
         font-weight: @font-weight-medium;
         padding: 4px 0;
 
-        &:focus {
+        &:focus:not(:focus-visible) {
           outline: none;
         }
 

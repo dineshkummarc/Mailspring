@@ -33,7 +33,7 @@
     "import/first": 0,
     "import/no-dynamic-require": 0,
     "import/no-mutable-exports": 0,
-    "jsx-a11y/tabindex-no-positive": 0,
+    "jsx-a11y/tabindex-no-positive": "error",
     "jsx-a11y/label-has-associated-control": ["error", {
       "labelComponents": [],
       "labelAttributes": [],

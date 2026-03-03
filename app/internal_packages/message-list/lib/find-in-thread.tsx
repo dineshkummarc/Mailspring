@@ -130,7 +130,6 @@ export default class FindInThread extends React.Component<
 
               <div className="btn-wrap">
                 <button
-                  tabIndex={-1}
                   className={btnCls}
                   aria-label={localized('Previous result')}
                   disabled={!this._navEnabled()}
@@ -145,7 +144,6 @@ export default class FindInThread extends React.Component<
 
                 <button
                   className={btnCls}
-                  tabIndex={-1}
                   aria-label={localized('Next result')}
                   disabled={!this._navEnabled()}
                   onClick={this._onNextResult}

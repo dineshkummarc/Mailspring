@@ -1,8 +1,13 @@
 @import 'ui-variables';
 @import 'ui-mixins';
 
-:focus {
+// Suppress focus outlines for mouse/pointer navigation; show only for keyboard navigation
+*:focus:not(:focus-visible) {
   outline: none;
+}
+:focus-visible {
+  outline: 2px solid @accent-primary;
+  outline-offset: 1px;
 }
 
 .pull-center {
