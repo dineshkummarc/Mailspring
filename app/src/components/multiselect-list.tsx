@@ -22,6 +22,8 @@ export interface MultiselectListProps extends ListTabularProps {
   keymapHandlers?: {
     [command: string]: CommandCallback;
   };
+  ariaLabel?: string;
+  ariaLabelForItem?: (item: any) => string;
   onFocusItem?: (item: any) => void;
   onDragItems?: (event: React.DragEvent, items: any) => void;
   onSetCursorPosition?: (item: any) => void;
@@ -206,7 +208,10 @@ export class MultiselectList extends React.Component<MultiselectListProps, Multi
         });
       props['data-item-id'] = item.id;
       props['role'] = 'option';
-      props['aria-selected'] = selected;
+      props['ariaSelected'] = selected;
+      if (this.props.ariaLabelForItem) {
+        props['ariaLabel'] = this.props.ariaLabelForItem(item);
+      }
       return props;
     };
   }
@@ -234,6 +239,9 @@ export class MultiselectList extends React.Component<MultiselectListProps, Multi
             itemPropsProvider={this._getItemPropsProvider()}
             onSelect={this._onClickItem}
             onComponentDidUpdate={this.props.onComponentDidUpdate}
+            role="listbox"
+            ariaLabel={this.props.ariaLabel}
+            ariaMultiselectable={this.state.layoutMode === 'list'}
             {...otherProps}
             onDragStart={this._onDragStart}
           />

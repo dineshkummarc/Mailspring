@@ -24,6 +24,7 @@ const CounterStyles = {
 
 type OutlineViewItemProps = {
   item: IOutlineViewItem;
+  level?: number;
 };
 type OutlineViewItemState = {
   editing: boolean;
@@ -330,7 +331,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
           <input
             autoFocus
             type="text"
-            tabIndex={1}
+            tabIndex={0}
             className="item-input"
             placeholder={item.inputPlaceholder || ''}
             defaultValue={item.name}
@@ -349,12 +350,13 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
 
   _renderChildren(item = this.props.item) {
     if (item.children.length > 0 && !item.collapsed) {
+      const childLevel = (this.props.level || 1) + 1;
       return (
-        <section className="item-children" role="group" key={`${item.id}-children`}>
+        <div role="group" className="item-children" key={`${item.id}-children`}>
           {item.children.map((child) => (
-            <OutlineViewItem key={child.id} item={child} />
+            <OutlineViewItem key={child.id} item={child} level={childLevel} />
           ))}
-        </section>
+        </div>
       );
     }
     return <span />;
@@ -362,16 +364,24 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
 
   render() {
     const item = this.props.item;
+    const hasChildren = item.children.length > 0;
     const containerClasses = classnames({
       'item-container': true,
       dropping: this.state.isDropping,
     });
     return (
-      <div role="treeitem" aria-selected={item.selected} aria-label={item.name}>
+      <div
+        role="treeitem"
+        aria-level={this.props.level || 1}
+        aria-selected={item.selected || false}
+        aria-expanded={hasChildren ? !item.collapsed : undefined}
+        aria-label={item.name}
+        tabIndex={item.selected ? 0 : -1}
+      >
         <span className={containerClasses}>
           <DisclosureTriangle
             collapsed={item.collapsed}
-            visible={item.children.length > 0}
+            visible={hasChildren}
             onCollapseToggled={this._onCollapseToggled}
           />
           {this._renderItem()}

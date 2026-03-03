@@ -31,6 +31,7 @@ import * as ThreadListColumns from './thread-list-columns';
 import ThreadListScrollTooltip from './thread-list-scroll-tooltip';
 import ThreadListStore from './thread-list-store';
 import ThreadListContextMenu from './thread-list-context-menu';
+import { threadAriaLabel } from './thread-list-aria-utils';
 
 class ThreadList extends React.Component<
   Record<string, unknown>,
@@ -116,6 +117,8 @@ class ThreadList extends React.Component<
             className={`thread-list thread-list-${this.state.style}`}
             scrollTooltipComponent={ThreadListScrollTooltip}
             EmptyComponent={EmptyListState}
+            ariaLabel={FocusedPerspectiveStore.current().name || localized('Threads')}
+            ariaLabelForItem={(thread) => threadAriaLabel(thread)}
             keymapHandlers={{
               'thread-list:select-read': this._onSelectRead,
               'thread-list:select-unread': this._onSelectUnread,

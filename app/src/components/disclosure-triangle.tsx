@@ -23,24 +23,7 @@ export class DisclosureTriangle extends React.Component<DisclosureTriangleProps>
       classnames += ' collapsed';
     }
     return (
-      <div
-        role={visible ? 'button' : undefined}
-        tabIndex={visible ? 0 : undefined}
-        aria-expanded={visible ? !collapsed : undefined}
-        aria-label={label}
-        className={classnames}
-        onClick={onCollapseToggled}
-        onKeyDown={
-          visible
-            ? (e) => {
-                if (e.key === 'Enter' || e.key === ' ') {
-                  e.preventDefault();
-                  onCollapseToggled();
-                }
-              }
-            : undefined
-        }
-      >
+      <div className={classnames} aria-hidden="true" onClick={onCollapseToggled}>
         <div />
       </div>
     );

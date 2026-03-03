@@ -252,7 +252,7 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
 
     const showInput = allowCreate && this.state.showCreateInput;
     return (
-      <div role="list">
+      <div role="tree" aria-label={this.props.title}>
         {showInput ? this._renderCreateInput() : null}
         {this._renderItems()}
       </div>
