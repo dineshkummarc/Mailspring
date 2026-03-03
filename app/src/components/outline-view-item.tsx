@@ -194,11 +194,11 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
     return this.props.item.onDelete != null || this.props.item.onEdited != null;
   };
 
-  _shouldAcceptDrop = event => {
+  _shouldAcceptDrop = (event) => {
     return this._runCallback('shouldAcceptDrop', event);
   };
 
-  _clearEditingState = event => {
+  _clearEditingState = (event) => {
     this.setState({ editing: false });
     this._runCallback('onInputCleared', event);
   };
@@ -217,7 +217,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
     }
   };
 
-  _onDrop = event => {
+  _onDrop = (event) => {
     this._runCallback('onDrop', event);
   };
 
@@ -225,7 +225,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
     this._runCallback('onCollapseToggled');
   };
 
-  _onClick = event => {
+  _onClick = (event) => {
     event.preventDefault();
     this._runCallback('onSelect');
   };
@@ -234,7 +234,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
     this._runCallback('onDelete');
   };
 
-  _onEdited = value => {
+  _onEdited = (value) => {
     this._runCallback('onEdited', value);
   };
 
@@ -244,16 +244,16 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
     }
   };
 
-  _onInputFocus = event => {
+  _onInputFocus = (event) => {
     const input = event.target;
     input.selectionStart = input.selectionEnd = input.value.length;
   };
 
-  _onInputBlur = event => {
+  _onInputBlur = (event) => {
     this._clearEditingState(event);
   };
 
-  _onInputKeyDown = event => {
+  _onInputKeyDown = (event) => {
     if (event.key === 'Escape') {
       this._clearEditingState(event);
     }
@@ -263,7 +263,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
     }
   };
 
-  _onShowContextMenu = event => {
+  _onShowContextMenu = (event) => {
     event.stopPropagation();
     const item = this.props.item;
     const contextMenuLabel = item.contextMenuLabel || item.name;
@@ -350,8 +350,8 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
   _renderChildren(item = this.props.item) {
     if (item.children.length > 0 && !item.collapsed) {
       return (
-        <section className="item-children" key={`${item.id}-children`}>
-          {item.children.map(child => (
+        <section className="item-children" role="group" key={`${item.id}-children`}>
+          {item.children.map((child) => (
             <OutlineViewItem key={child.id} item={child} />
           ))}
         </section>
@@ -367,7 +367,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
       dropping: this.state.isDropping,
     });
     return (
-      <div>
+      <div role="treeitem" aria-selected={item.selected} aria-label={item.name}>
         <span className={containerClasses}>
           <DisclosureTriangle
             collapsed={item.collapsed}

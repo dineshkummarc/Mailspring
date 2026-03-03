@@ -170,13 +170,23 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
     return (
       <span
         className="add-item-button"
+        role="button"
+        tabIndex={0}
+        aria-label={localized('Add item to %@', this.props.title)}
         onMouseDown={this._onCreateButtonMouseDown}
         onMouseUp={this._onCreateButtonClicked}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            this._onCreateButtonClicked();
+          }
+        }}
       >
         <RetinaImg
           url="mailspring://account-sidebar/assets/icon-sidebar-addcategory@2x.png"
           style={{ height: 15, width: 14 }}
           mode={RetinaImg.Mode.ContentIsMask}
+          alt=""
         />
       </span>
     );
@@ -184,7 +194,7 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
 
   _renderHeading(allowCreate, collapsed, collapsible) {
     const collapseLabel = collapsed ? localized('Show') : localized('Hide');
-    let style: CSSProperties = {}
+    let style: CSSProperties = {};
     if (this.props.titleColor) {
       style = {
         height: '50%',
@@ -192,7 +202,7 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
         borderLeftWidth: '4px',
         borderLeftColor: this.props.titleColor,
         borderLeftStyle: 'solid',
-      }
+      };
     }
     return (
       <DropZone
@@ -232,7 +242,7 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
   }
 
   _renderItems() {
-    return this.props.items.map(item => <OutlineViewItem key={item.id} item={item} />);
+    return this.props.items.map((item) => <OutlineViewItem key={item.id} item={item} />);
   }
 
   _renderOutline(allowCreate, collapsed) {
@@ -242,7 +252,7 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
 
     const showInput = allowCreate && this.state.showCreateInput;
     return (
-      <div>
+      <div role="list">
         {showInput ? this._renderCreateInput() : null}
         {this._renderItems()}
       </div>

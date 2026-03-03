@@ -137,7 +137,7 @@ export class MultiselectList extends React.Component<MultiselectListProps, Multi
   }
 
   componentWillUnmount() {
-    this.unsubscribers.forEach(unsub => unsub());
+    this.unsubscribers.forEach((unsub) => unsub());
   }
 
   /**

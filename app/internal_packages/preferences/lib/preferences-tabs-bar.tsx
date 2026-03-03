@@ -3,7 +3,7 @@ import fs from 'fs';
 import classNames from 'classnames';
 
 import { Flexbox, RetinaImg } from 'mailspring-component-kit';
-import { Actions, PreferencesUIStoreTab, Utils } from 'mailspring-exports';
+import { Actions, PreferencesUIStoreTab, Utils, localized } from 'mailspring-exports';
 
 interface PreferencesTabItemProps {
   selection: {
@@ -43,8 +43,16 @@ class PreferencesTabItem extends React.Component<PreferencesTabItemProps> {
       />
     );
 
+    const isSelected = tabId === selection.tabId;
     return (
-      <div className={classes} onClick={this._onClick}>
+      <div
+        className={classes}
+        role="tab"
+        aria-selected={isSelected}
+        aria-label={displayName}
+        tabIndex={isSelected ? 0 : -1}
+        onClick={this._onClick}
+      >
         {icon}
         <div className="name">{displayName}</div>
       </div>
@@ -64,7 +72,7 @@ class PreferencesTabsBar extends React.Component<PreferencesTabBarProps> {
   static displayName = 'PreferencesTabsBar';
 
   renderTabs() {
-    return this.props.tabs.map(tabItem => (
+    return this.props.tabs.map((tabItem) => (
       <PreferencesTabItem key={tabItem.tabId} tabItem={tabItem} selection={this.props.selection} />
     ));
   }
@@ -72,7 +80,12 @@ class PreferencesTabsBar extends React.Component<PreferencesTabBarProps> {
   render() {
     return (
       <div className="container-preference-tabs">
-        <Flexbox direction="row" className="preferences-tabs">
+        <Flexbox
+          direction="row"
+          className="preferences-tabs"
+          role="tablist"
+          aria-label={localized('Preferences tabs')}
+        >
           <div style={{ flex: 0.5 }} />
           {this.renderTabs()}
           <div style={{ flex: 0.5 }} />
