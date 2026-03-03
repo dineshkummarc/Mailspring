@@ -8,6 +8,7 @@ interface TokenizingContenteditableProps {
   onFocus: (event: React.FocusEvent<HTMLDivElement>) => void;
   onBlur: (event: React.FocusEvent<HTMLDivElement>) => void;
   'aria-label'?: string;
+  role?: string;
   'aria-autocomplete'?: string;
 }
 
@@ -136,6 +137,7 @@ export default class TokenizingContenteditable extends Component<TokenizingConte
           onBlur={this.props.onBlur}
           onInput={this.onChange}
           aria-label={this.props['aria-label']}
+          role={this.props.role}
           aria-autocomplete={
             this.props['aria-autocomplete'] as React.AriaAttributes['aria-autocomplete']
           }

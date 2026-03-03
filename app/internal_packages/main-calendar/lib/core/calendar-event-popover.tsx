@@ -242,6 +242,7 @@ export class CalendarEventPopover extends React.Component<
             <input
               className="title"
               type="text"
+              aria-label={localized('Event title')}
               placeholder={localized('New Event')}
               value={title}
               onChange={(e) => this.updateField('title', e.target.value)}
@@ -353,6 +354,7 @@ export class CalendarEventPopover extends React.Component<
               <textarea
                 ref={this.notesTextareaRef}
                 value={notes}
+                aria-label={localized('Notes')}
                 placeholder={localized('Add notes or URL...')}
                 onChange={(e) => this.updateField('description', e.target.value)}
               />

@@ -48,6 +48,19 @@ div > .inline-block-tight:last-child {
   vertical-align: top;
 }
 
+// Visually hidden but readable by screen readers
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
 // Use left margin when it's in a float: right element.
 // Sets the margin correctly when inline blocks are hidden and shown.
 .pull-right {

@@ -146,7 +146,11 @@ export class ComposerHeader extends React.Component<ComposerHeaderProps, Compose
     }
     return (
       <KeyCommandsRegion tabIndex={-1} className="composer-subject subject-field">
+        <label htmlFor="composer-subject" className="sr-only">
+          {localized('Subject')}
+        </label>
         <input
+          id="composer-subject"
           ref={(el) => {
             if (el) {
               this._els[Fields.Subject] = el;

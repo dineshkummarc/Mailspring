@@ -119,6 +119,7 @@ export default class FindInThread extends React.Component<
                 ref={el => {
                   this._searchBoxEl = el;
                 }}
+                aria-label={localized('Find in thread')}
                 placeholder={localized('Find in thread')}
                 onChange={this._onFindChange}
                 onKeyDown={this._onFindKeyDown}

@@ -41,12 +41,17 @@ class AppearanceScaleSlider extends React.Component<
             <RetinaImg name="appearance-scale-big.png" mode={RetinaImg.Mode.ContentDark} />
           </div>
         </div>
+        <label htmlFor="interface-zoom-slider" className="sr-only">
+          {localized('Interface Scale')}
+        </label>
         <input
+          id="interface-zoom-slider"
           type="range"
           min={0.8}
           max={1.4}
           step={0.05}
           value={this.state.value}
+          aria-label={localized('Interface Scale')}
           onChange={(e) => this.props.config.set(this.kp, e.target.value)}
         />
       </div>

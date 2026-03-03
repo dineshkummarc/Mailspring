@@ -368,6 +368,7 @@ class ThreadSearchBar extends Component<ThreadSearchBarProps, ThreadSearchBarSta
           onBlur={this._onBlur}
           onChange={this._onSearchQueryChanged}
           aria-label={this._placeholder()}
+          role="searchbox"
           aria-autocomplete="list"
         />
         {showX && (
