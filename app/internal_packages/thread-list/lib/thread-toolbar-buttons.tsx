@@ -260,9 +260,10 @@ export class MarkAsSpamButton extends React.Component<{ items: Thread[] }> {
           tabIndex={-1}
           className="btn btn-toolbar"
           title={localized('Mark as Spam')}
+          aria-label={localized('Mark as Spam')}
           onClick={this._onMarkAsSpam}
         >
-          <RetinaImg name="toolbar-spam.png" mode={RetinaImg.Mode.ContentIsMask} />
+          <RetinaImg name="toolbar-spam.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </BindGlobalCommands>
     );
@@ -297,8 +298,14 @@ export class ToggleStarredButton extends React.Component<{ items: Thread[] }> {
 
     return (
       <BindGlobalCommands commands={{ 'core:star-item': () => this._onStar() }}>
-        <button tabIndex={-1} className="btn btn-toolbar" title={title} onClick={this._onStar}>
-          <RetinaImg name={imageName} mode={RetinaImg.Mode.ContentIsMask} />
+        <button
+          tabIndex={-1}
+          className="btn btn-toolbar"
+          title={title}
+          aria-label={title}
+          onClick={this._onStar}
+        >
+          <RetinaImg name={imageName} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </BindGlobalCommands>
     );
@@ -335,6 +342,7 @@ export class ToggleUnreadButton extends React.Component<{ items: Thread[] }> {
     const targetUnread = this.props.items.every(t => t.unread === false);
     const fragment = targetUnread ? localized('Unread') : localized('Read');
     const key = targetUnread ? 'unread' : 'read';
+    const label = localized(`Mark as %@`, fragment);
 
     return (
       <BindGlobalCommands
@@ -348,10 +356,11 @@ export class ToggleUnreadButton extends React.Component<{ items: Thread[] }> {
         <button
           tabIndex={-1}
           className="btn btn-toolbar"
-          title={localized(`Mark as %@`, fragment)}
+          title={label}
+          aria-label={label}
           onClick={this._onClick}
         >
-          <RetinaImg name={`toolbar-markas${key}.png`} mode={RetinaImg.Mode.ContentIsMask} />
+          <RetinaImg name={`toolbar-markas${key}.png`} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </BindGlobalCommands>
     );
@@ -395,12 +404,19 @@ class ThreadArrowButton extends React.Component<
     this._unsubscribe_focus();
   }
 
-  _onClick = () => {
+  _onClick = (e?: React.KeyboardEvent | React.MouseEvent) => {
     if (this.state.disabled) {
       return;
     }
     AppEnv.commands.dispatch(this.props.command);
     return;
+  };
+
+  _onKeyDown = (e: React.KeyboardEvent) => {
+    if ((e.key === 'Enter' || e.key === ' ') && !this.state.disabled) {
+      e.preventDefault();
+      this._onClick(e);
+    }
   };
 
   _onStoreChange = () => {
@@ -409,15 +425,25 @@ class ThreadArrowButton extends React.Component<
 
   render() {
     const { direction, title } = this.props;
+    const { disabled } = this.state;
     const classes = classNames({
       'btn-icon': true,
       'message-toolbar-arrow': true,
-      disabled: this.state.disabled,
+      disabled: disabled,
     });
 
     return (
-      <div className={`${classes} ${direction}`} onClick={this._onClick} title={title}>
-        <RetinaImg name={`toolbar-${direction}-arrow.png`} mode={RetinaImg.Mode.ContentIsMask} />
+      <div
+        className={`${classes} ${direction}`}
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-label={title}
+        aria-disabled={disabled}
+        onClick={this._onClick}
+        onKeyDown={this._onKeyDown}
+        title={title}
+      >
+        <RetinaImg name={`toolbar-${direction}-arrow.png`} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
       </div>
     );
   }

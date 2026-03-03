@@ -66,13 +66,23 @@ export default class ComposerHeaderActions extends React.Component<ComposerHeade
         <span
           className="action show-popout"
           key="popout"
+          role="button"
+          tabIndex={0}
           title={localized('Popout composer…')}
+          aria-label={localized('Popout composer…')}
           onClick={this._onPopoutComposer}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this._onPopoutComposer();
+            }
+          }}
         >
           <RetinaImg
             name="composer-popout.png"
             mode={RetinaImg.Mode.ContentIsMask}
             style={{ position: 'relative', top: '-2px' }}
+            aria-hidden="true"
           />
         </span>
       );

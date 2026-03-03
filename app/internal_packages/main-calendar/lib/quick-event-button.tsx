@@ -27,9 +27,10 @@ export class QuickEventButton extends React.Component<Record<string, unknown>> {
           tabIndex={-1}
           className="btn btn-toolbar item-compose"
           title={localized('Create new event')}
+          aria-label={localized('Create new event')}
           onClick={this.onClick}
         >
-          <RetinaImg name="toolbar-compose.png" mode={RetinaImg.Mode.ContentIsMask} />
+          <RetinaImg name="toolbar-compose.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </BindGlobalCommands>
     );

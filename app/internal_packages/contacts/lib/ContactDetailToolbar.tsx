@@ -115,18 +115,20 @@ class ContactDetailToolbarWithData extends React.Component<ContactDetailToolbarP
           <button
             tabIndex={-1}
             title={localized('Delete')}
+            aria-label={localized('Delete')}
             className={`btn btn-toolbar ${actionSet.length === 0 && 'btn-disabled'}`}
             onClick={actionSet.length > 0 ? this._onDelete : undefined}
           >
-            <RetinaImg name="toolbar-trash.png" mode={RetinaImg.Mode.ContentIsMask} />
+            <RetinaImg name="toolbar-trash.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
           </button>
           <button
             tabIndex={-1}
             title={localized('Export vCard')}
+            aria-label={localized('Export vCard')}
             className={`btn btn-toolbar ${actionSet.length === 0 && 'btn-disabled'}`}
             onClick={actionSet.length > 0 ? () => exportContactsToFile(actionSet) : undefined}
           >
-            <RetinaImg name="toolbar-export-contact.png" mode={RetinaImg.Mode.ContentIsMask} />
+            <RetinaImg name="toolbar-export-contact.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
           </button>
           <button
             tabIndex={-1}

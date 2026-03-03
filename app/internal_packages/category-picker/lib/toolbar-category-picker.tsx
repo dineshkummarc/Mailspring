@@ -87,20 +87,22 @@ class MovePicker extends React.Component<{ items: Thread[] }> {
             tabIndex={-1}
             ref={el => (this._moveEl = el)}
             title={localized('Move to Folder')}
+            aria-label={localized('Move to Folder')}
             onClick={this._onOpenMovePopover}
             className={'btn btn-toolbar btn-category-picker'}
           >
-            <RetinaImg name={'toolbar-movetofolder.png'} mode={RetinaImg.Mode.ContentIsMask} />
+            <RetinaImg name={'toolbar-movetofolder.png'} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
           </button>
           {this._account.usesLabels() && (
             <button
               tabIndex={-1}
               ref={el => (this._labelEl = el)}
               title={localized('Apply Label')}
+              aria-label={localized('Apply Label')}
               onClick={this._onOpenLabelsPopover}
               className={'btn btn-toolbar btn-category-picker'}
             >
-              <RetinaImg name={'toolbar-tag.png'} mode={RetinaImg.Mode.ContentIsMask} />
+              <RetinaImg name={'toolbar-tag.png'} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
             </button>
           )}
         </KeyCommandsRegion>

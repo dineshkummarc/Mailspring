@@ -150,9 +150,9 @@ class ToolbarWindowControls extends React.Component<Record<string, unknown>, { a
 
     return (
       <div className={`toolbar-window-controls alt-${this.state.alt}`}>
-        <button tabIndex={-1} className="close" onClick={() => AppEnv.close()} />
-        <button tabIndex={-1} className="minimize" onClick={() => AppEnv.minimize()} />
-        <button tabIndex={-1} className="maximize" onClick={this._onMaximize} />
+        <button tabIndex={-1} className="close" aria-label={localized('Close window')} onClick={() => AppEnv.close()} />
+        <button tabIndex={-1} className="minimize" aria-label={localized('Minimize window')} onClick={() => AppEnv.minimize()} />
+        <button tabIndex={-1} className="maximize" aria-label={localized('Maximize window')} onClick={this._onMaximize} />
       </div>
     );
   }
@@ -178,8 +178,8 @@ class ToolbarMenuControl extends React.Component {
 
     return (
       <div className="toolbar-menu-control">
-        <button tabIndex={-1} className="btn btn-toolbar" onClick={this._onOpenMenu}>
-          <RetinaImg name="windows-menu-icon.png" mode={RetinaImg.Mode.ContentIsMask} />
+        <button tabIndex={-1} className="btn btn-toolbar" aria-label={localized('Application menu')} onClick={this._onOpenMenu}>
+          <RetinaImg name="windows-menu-icon.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </div>
     );

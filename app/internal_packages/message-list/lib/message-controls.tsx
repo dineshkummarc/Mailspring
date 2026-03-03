@@ -173,8 +173,20 @@ export default class MessageControls extends React.Component<MessageControlsProp
           closeOnMenuClick
           menu={this._dropdownMenu(items.slice(1))}
         />
-        <div className="message-actions-ellipsis" onClick={this._onShowActionsMenu}>
-          <RetinaImg name={'message-actions-ellipsis.png'} mode={RetinaImg.Mode.ContentIsMask} />
+        <div
+          className="message-actions-ellipsis"
+          role="button"
+          tabIndex={0}
+          aria-label={localized('More message actions')}
+          onClick={this._onShowActionsMenu}
+          onKeyDown={e => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              e.preventDefault();
+              this._onShowActionsMenu();
+            }
+          }}
+        >
+          <RetinaImg name={'message-actions-ellipsis.png'} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </div>
       </div>
     );

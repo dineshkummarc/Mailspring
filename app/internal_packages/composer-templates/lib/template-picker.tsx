@@ -129,13 +129,15 @@ class TemplatePicker extends React.Component<{
         className="btn btn-toolbar btn-templates narrow pull-right"
         onClick={this._onClickButton}
         title={localized('Quick Reply')}
+        aria-label={localized('Quick Reply')}
       >
         <RetinaImg
           url="mailspring://composer-templates/assets/icon-composer-templates@2x.png"
           mode={RetinaImg.Mode.ContentIsMask}
+          aria-hidden="true"
         />
         &nbsp;
-        <RetinaImg name="icon-composer-dropdown.png" mode={RetinaImg.Mode.ContentIsMask} />
+        <RetinaImg name="icon-composer-dropdown.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
       </button>
     );
   }
