@@ -12,6 +12,7 @@ type SwitchProps = {
   checked?: boolean;
   onChange: (...args: any[]) => any;
   className?: string;
+  'aria-label'?: string;
 };
 
 const Switch: React.SFC<SwitchProps> = props => {
@@ -21,7 +22,20 @@ const Switch: React.SFC<SwitchProps> = props => {
   }
 
   return (
-    <div className={classnames} onClick={props.onChange}>
+    <div
+      role="switch"
+      aria-checked={props.checked}
+      tabIndex={0}
+      aria-label={props['aria-label']}
+      className={classnames}
+      onClick={props.onChange}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          props.onChange(e as any);
+        }
+      }}
+    >
       <div className="handle" />
     </div>
   );

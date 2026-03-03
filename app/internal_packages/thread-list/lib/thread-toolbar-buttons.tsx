@@ -48,9 +48,10 @@ export class ArchiveButton extends React.Component<{ items: Thread[] }> {
           tabIndex={-1}
           className="btn btn-toolbar"
           title={localized('Archive')}
+          aria-label={localized('Archive')}
           onClick={this._onArchive}
         >
-          <RetinaImg name="toolbar-archive.png" mode={RetinaImg.Mode.ContentIsMask} />
+          <RetinaImg name="toolbar-archive.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </BindGlobalCommands>
     );
@@ -90,9 +91,10 @@ export class TrashButton extends React.Component<{ items: Thread[] }> {
           tabIndex={-1}
           className="btn btn-toolbar"
           title={localized('Move to Trash')}
+          aria-label={localized('Move to Trash')}
           onClick={this._onRemove}
         >
-          <RetinaImg name="toolbar-trash.png" mode={RetinaImg.Mode.ContentIsMask} />
+          <RetinaImg name="toolbar-trash.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
         </button>
       </BindGlobalCommands>
     );
@@ -236,9 +238,10 @@ export class MarkAsSpamButton extends React.Component<{ items: Thread[] }> {
             tabIndex={-1}
             className="btn btn-toolbar"
             title={localized('Not Spam')}
+            aria-label={localized('Not Spam')}
             onClick={this._onNotSpam}
           >
-            <RetinaImg name="toolbar-not-spam.png" mode={RetinaImg.Mode.ContentIsMask} />
+            <RetinaImg name="toolbar-not-spam.png" mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
           </button>
         </BindGlobalCommands>
       );

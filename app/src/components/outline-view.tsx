@@ -206,7 +206,24 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
         </span>
         {allowCreate ? this._renderCreateButton() : null}
         {collapsible ? (
-          <span className="collapse-button" onClick={this._onCollapseToggled}>
+          <span
+            className="collapse-button"
+            role="button"
+            tabIndex={0}
+            aria-expanded={!collapsed}
+            aria-label={
+              collapsed
+                ? localized('Expand %@', this.props.title)
+                : localized('Collapse %@', this.props.title)
+            }
+            onClick={this._onCollapseToggled}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                this._onCollapseToggled();
+              }
+            }}
+          >
             {collapseLabel}
           </span>
         ) : null}
@@ -238,7 +255,7 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
     const allowCreate = this.props.onItemCreated != null && !collapsed;
 
     return (
-      <section className="outline-view nylas-outline-view">
+      <section className="outline-view nylas-outline-view" aria-label={this.props.title}>
         {this._renderHeading(allowCreate, collapsed, collapsible)}
         {this._renderOutline(allowCreate, collapsed)}
       </section>

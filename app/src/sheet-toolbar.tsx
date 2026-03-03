@@ -212,6 +212,13 @@ interface ToolbarState {
   columnNames: string[];
 }
 
+const COLUMN_ARIA_LABELS: Record<string, string> = {
+  RootSidebar: localized('Sidebar toolbar'),
+  ThreadList: localized('Thread list toolbar'),
+  MessageList: localized('Message toolbar'),
+  MessageListSidebar: localized('Contact panel toolbar'),
+};
+
 let lastReportedToolbarHeight = 0;
 
 export default class Toolbar extends React.Component<ToolbarProps, ToolbarState> {
@@ -384,6 +391,8 @@ export default class Toolbar extends React.Component<ToolbarProps, ToolbarState>
   render() {
     const toolbars = this.state.columns.map((components, idx) => (
       <div
+        role="toolbar"
+        aria-label={COLUMN_ARIA_LABELS[this.state.columnNames[idx]] || localized('Toolbar')}
         style={{ position: 'absolute', top: 0, display: 'none' }}
         className={`toolbar-${this.state.columnNames[idx]}`}
         data-column={idx}

@@ -3,7 +3,7 @@ import { ListTabular, ListTabularProps, ListTabularColumn } from './list-tabular
 import { Spinner } from './spinner';
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { PropTypes, Utils, WorkspaceStore } from 'mailspring-exports';
+import { PropTypes, Utils, WorkspaceStore, localized } from 'mailspring-exports';
 import { KeyCommandsRegion } from 'mailspring-component-kit';
 
 import MultiselectListInteractionHandler from './multiselect-list-interaction-handler';
@@ -205,6 +205,8 @@ export class MultiselectList extends React.Component<MultiselectListProps, Multi
             handler.shouldShowKeyboardCursor() && item.id === this.props.keyboardCursorId,
         });
       props['data-item-id'] = item.id;
+      props['role'] = 'option';
+      props['aria-selected'] = selected;
       return props;
     };
   }
@@ -218,7 +220,13 @@ export class MultiselectList extends React.Component<MultiselectListProps, Multi
       className += ` ${handler.cssClass()}`;
 
       return (
-        <KeyCommandsRegion globalHandlers={this._globalKeymapHandlers()} className={className}>
+        <KeyCommandsRegion
+          globalHandlers={this._globalKeymapHandlers()}
+          className={className}
+          role="listbox"
+          aria-multiselectable="true"
+          aria-label={localized('Thread list')}
+        >
           <ListTabular
             ref={this.listRef}
             columns={this.state.computedColumns}
