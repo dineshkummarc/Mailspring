@@ -71,9 +71,12 @@ class MatchQueryExpressionVisitor extends SearchQueryExpressionVisitor {
   }
 
   visitText(node) {
-    // Sanitize the token to prevent FTS query injection. Strip characters
-    // that have special meaning in SQLite FTS (double quotes, asterisks, etc.)
-    this._result = node.token.s.replace(/["*^(){}:]/g, '');
+    // Escape double quotes for FTS5 quoted string context. The callers
+    // (visitFrom, visitTo, visitSubject, visitGeneric, visitIn) all wrap
+    // this text in double quotes, so the only character that needs escaping
+    // is the double quote itself (doubled per FTS5 spec). All other special
+    // FTS5 characters are neutralized by being inside the quoted phrase.
+    this._result = node.token.s.replace(/"/g, '""');
   }
 
   visitUnread(node) {
@@ -86,7 +89,7 @@ class MatchQueryExpressionVisitor extends SearchQueryExpressionVisitor {
 
   visitIn(node) {
     const text = this.visitAndGetResult(node.text);
-    this._result = `(categories : "${text}*")`;
+    this._result = `(categories : "${text}"*)`;
   }
 
   visitHasAttachment(node) {
