@@ -191,7 +191,7 @@ export function createVTIMEZONEString(tzId: string, referenceDate: Date): string
     'BEGIN:VTIMEZONE',
     `TZID:${tzId}`,
     'BEGIN:STANDARD',
-    'DTSTART:19700101T000000Z',
+    'DTSTART:19700101T000000',
     `TZOFFSETFROM:${offsetStr}`,
     `TZOFFSETTO:${offsetStr}`,
     `TZNAME:${m.zoneAbbr()}`,
@@ -641,9 +641,14 @@ export function updateRecurrenceRule(ics: string, rruleString: string | null): s
   // Remove existing RRULE(s)
   vevent.removeAllProperties('rrule');
 
-  // Add new RRULE if provided
   if (rruleString) {
+    // Add new RRULE
     vevent.addPropertyWithValue('rrule', ical.Recur.fromString(rruleString));
+  } else {
+    // Removing recurrence entirely — also clean up EXDATE and RDATE
+    // which are meaningless without an RRULE (RFC 5545)
+    vevent.removeAllProperties('exdate');
+    vevent.removeAllProperties('rdate');
   }
 
   // Update DTSTAMP to indicate modification
