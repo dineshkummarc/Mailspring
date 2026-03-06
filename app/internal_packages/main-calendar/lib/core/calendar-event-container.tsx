@@ -45,35 +45,35 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
     window.removeEventListener('mouseup', this._onWindowMouseUp);
   }
 
-  _onCalendarMouseUp = (event) => {
+  _onCalendarMouseUp = (event: React.MouseEvent) => {
     this._DOMCache = {};
     if (!this._mouseIsDown) {
       return;
     }
     this._mouseIsDown = false;
-    this._runPropsHandler('onCalendarMouseUp', event);
+    this._runPropsHandler('onCalendarMouseUp', event.nativeEvent);
   };
 
-  _onCalendarMouseDown = (event) => {
+  _onCalendarMouseDown = (event: React.MouseEvent) => {
     this._DOMCache = {};
     this._mouseIsDown = true;
-    this._runPropsHandler('onCalendarMouseDown', event);
+    this._runPropsHandler('onCalendarMouseDown', event.nativeEvent);
   };
 
-  _onCalendarMouseMove = (event) => {
-    this._runPropsHandler('onCalendarMouseMove', event);
+  _onCalendarMouseMove = (event: React.MouseEvent) => {
+    this._runPropsHandler('onCalendarMouseMove', event.nativeEvent);
   };
 
-  _onCalendarClick = (event) => {
+  _onCalendarClick = (event: React.MouseEvent) => {
     // Only fire for background clicks (not on events).
     // CalendarEvent and MonthViewEvent components stop propagation of their own clicks.
-    this._runPropsHandler('onCalendarClick', event);
+    this._runPropsHandler('onCalendarClick', event.nativeEvent);
   };
 
-  _onCalendarDoubleClick = (event) => {
+  _onCalendarDoubleClick = (event: React.MouseEvent) => {
     // Only fire for background double-clicks (not on events).
     // CalendarEvent components stop propagation of their own double-clicks.
-    this._runPropsHandler('onCalendarDoubleClick', event);
+    this._runPropsHandler('onCalendarDoubleClick', event.nativeEvent);
   };
 
   _runPropsHandler(name: keyof CalendarEventContainerProps, event: MouseEvent) {
@@ -103,7 +103,7 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
    * Uses [data-calendar-start], [data-calendar-end], and [data-calendar-type] to
    * identify time containers across all calendar views.
    */
-  _dataFromMouseEvent(event) {
+  _dataFromMouseEvent(event: MouseEvent) {
     let x = null;
     let y = null;
     let width = null;
@@ -111,12 +111,13 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
     let time = null;
     let containerType: CalendarContainerType | null = null;
 
-    if (!event.target || !event.target.closest) {
+    const target = event.target as HTMLElement;
+    if (!target || !target.closest) {
       return { x, y, width, height, time, containerType };
     }
 
     // Find the nearest time container using the unified data attribute
-    const timeContainer = event.target.closest('[data-calendar-start]') as HTMLElement;
+    const timeContainer = target.closest('[data-calendar-start]') as HTMLElement;
     if (!timeContainer) {
       return { x, y, width, height, time, containerType };
     }
@@ -140,8 +141,7 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
 
     // Get scroll container for offset calculations (week view needs this)
     const scrollContainer =
-      this._DOMCache.scrollContainer ||
-      (event.target.closest('.calendar-area-wrap') as HTMLElement);
+      this._DOMCache.scrollContainer || (target.closest('.calendar-area-wrap') as HTMLElement);
     const scrollContainerRect =
       this._DOMCache.scrollContainerRect ||
       (scrollContainer ? scrollContainer.getBoundingClientRect() : null);
@@ -215,7 +215,7 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
     return { x, y, width, height, time, containerType };
   }
 
-  _onWindowMouseUp = (event) => {
+  _onWindowMouseUp = (event: MouseEvent) => {
     if (ReactDOM.findDOMNode(this).contains(event.target)) {
       return;
     }

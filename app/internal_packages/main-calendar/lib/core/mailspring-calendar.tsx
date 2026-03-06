@@ -112,6 +112,7 @@ interface MailspringCalendarState {
   disabledCalendars: string[];
   dragState: DragState | null;
   calendarListVisible: boolean;
+  readOnlyCalendarIds: Set<string>;
 }
 
 export class MailspringCalendar extends React.Component<
@@ -143,6 +144,7 @@ export class MailspringCalendar extends React.Component<
       disabledCalendars: AppEnv.config.get(DISABLED_CALENDARS) || [],
       dragState: null,
       calendarListVisible: AppEnv.config.get(CALENDAR_LIST_VISIBLE) !== false,
+      readOnlyCalendarIds: new Set<string>(),
     };
   }
 
@@ -159,19 +161,6 @@ export class MailspringCalendar extends React.Component<
     }
   }
 
-  /**
-   * Get the set of read-only calendar IDs
-   */
-  _getReadOnlyCalendarIds(): Set<string> {
-    const readOnlyIds = new Set<string>();
-    for (const calendar of this.state.calendars) {
-      if (calendar.readOnly) {
-        readOnlyIds.add(calendar.id);
-      }
-    }
-    return readOnlyIds;
-  }
-
   _subscribeToCalendars() {
     const calQuery = DatabaseStore.findAll<Calendar>(Calendar);
     const calQueryObs = Rx.Observable.fromQuery(calQuery);
@@ -183,11 +172,19 @@ export class MailspringCalendar extends React.Component<
         // Update the color cache with synced calendar colors from CalDAV
         setCalendarColors(calendars);
 
+        const readOnlyCalendarIds = new Set<string>();
+        for (const calendar of calendars) {
+          if (calendar.readOnly) {
+            readOnlyCalendarIds.add(calendar.id);
+          }
+        }
+
         this.setState({
           calendars: calendars,
           calendarsLoaded: true,
           accounts: accountStore.accounts(),
           disabledCalendars: disabledCalendars || [],
+          readOnlyCalendarIds,
         });
       }
     );
@@ -314,6 +311,7 @@ export class MailspringCalendar extends React.Component<
       description: '',
       location: '',
       isAllDay,
+      isRecurring: false,
       isCancelled: false,
       isPending: false,
       isException: false,
@@ -551,14 +549,10 @@ export class MailspringCalendar extends React.Component<
   };
 
   /**
-   * Handle mouse down on calendar (for cancellation via escape or starting new drag)
+   * Handle mouse down on calendar
    */
-  _onCalendarMouseDown = (args: CalendarEventArgs) => {
-    // If there's an active drag, this shouldn't happen (mouseUp should have cleared it)
-    // But just in case, clear it
-    if (this.state.dragState && !args.mouseIsDown) {
-      this.setState({ dragState: null });
-    }
+  _onCalendarMouseDown = (_args: CalendarEventArgs) => {
+    // No-op: mouseUp handles drag completion, mouseMove handles drag updates
   };
 
   /**
@@ -824,7 +818,7 @@ export class MailspringCalendar extends React.Component<
         onEventFocused={this._onEventFocused}
         dragState={this.state.dragState}
         onEventDragStart={this._onEventDragStart}
-        readOnlyCalendarIds={this._getReadOnlyCalendarIds()}
+        readOnlyCalendarIds={this.state.readOnlyCalendarIds}
       />
     );
   }
