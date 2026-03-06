@@ -3,6 +3,7 @@ import {
   Event,
   Matcher,
   DatabaseStore,
+  CalendarUtils,
   AndCompositeMatcher,
   OrCompositeMatcher,
   Contact,
@@ -175,10 +176,28 @@ export function occurrencesForEvents(
         });
       } catch (err) {
         console.error(`Failed to expand ICS for event ${master.id}:`, err);
+        // Fallback: show the master event as a single occurrence so it doesn't vanish
+        occurrences.push({
+          start: master.recurrenceStart,
+          end: master.recurrenceEnd,
+          id: `${master.id}-e0`,
+          accountId: master.accountId,
+          calendarId: master.calendarId,
+          title: '(Error expanding event)',
+          location: '',
+          description: '',
+          isAllDay: master.recurrenceEnd - master.recurrenceStart >= 86400 - 1,
+          isCancelled: false,
+          isPending: false,
+          isException: false,
+          isRecurring: false,
+          organizer: null,
+          attendees: [],
+        });
       }
     }
 
-    // Handle standalone exceptions (separate ICS files scenario)
+    // Handle standalone exceptions (separate database records)
     // Only add if their start time wasn't already covered by master expansion
     for (const exception of exceptions) {
       const start = exception.recurrenceStart;
@@ -187,52 +206,55 @@ export function occurrencesForEvents(
         continue;
       }
 
-      // This exception came from a separate ICS file, expand it directly
+      // Exception events are single-instance (no RRULE), so parse directly
+      // with ICAL.js instead of using ical-expander (which is for recurrence expansion)
       try {
-        const icalExpander = new IcalExpander({ ics: exception.ics, maxIterations: 100 });
-        const expanded = icalExpander.between(new Date(startUnix * 1000), new Date(endUnix * 1000));
+        const { event: icsEvent } = CalendarUtils.parseICSString(exception.ics);
+        const occStart = icsEvent.startDate.toJSDate().getTime() / 1000;
+        const occEnd = icsEvent.endDate.toJSDate().getTime() / 1000;
 
-        [...expanded.events, ...expanded.occurrences].forEach((e, idx) => {
-          const occStart = e.startDate.toJSDate().getTime() / 1000;
-          const occEnd = e.endDate.toJSDate().getTime() / 1000;
-          const item = 'item' in e ? e.item : e;
-          const statusValue = item.component?.getFirstPropertyValue('status');
-          const status = typeof statusValue === 'string' ? statusValue : '';
+        // Skip if outside the visible range
+        if (occEnd < startUnix || occStart > endUnix) {
+          continue;
+        }
 
-          // Parse attendees with their participation status
-          const attendees: EventAttendee[] = item.attendees.map(a => ({
-            email: normalizeEmail(String(a.getFirstValue() || '')),
-            name: a.getFirstParameter('cn') || '',
-            partstat: (a.getFirstParameter('partstat') || 'NEEDS-ACTION') as ParticipationStatus,
-          }));
+        const vevent = icsEvent.component;
+        const statusValue = vevent?.getFirstPropertyValue('status');
+        const status = typeof statusValue === 'string' ? statusValue : '';
 
-          // Determine if event should show "pending" styling
-          const isTentativeStatus = status.toUpperCase() === 'TENTATIVE';
-          const myAttendee = attendees.find(a => a.email && new Contact({ email: a.email }).isMe());
-          const myPartstat = myAttendee?.partstat?.toUpperCase();
-          const isAwaitingMyResponse =
-            myAttendee && myPartstat !== 'ACCEPTED' && myPartstat !== 'DECLINED';
+        // Parse attendees with their participation status
+        const attendees: EventAttendee[] = icsEvent.attendees.map(a => ({
+          email: normalizeEmail(String(a.getFirstValue() || '')),
+          name: a.getFirstParameter('cn') || '',
+          partstat: (a.getFirstParameter('partstat') || 'NEEDS-ACTION') as ParticipationStatus,
+        }));
 
-          occurrences.push({
-            start: occStart,
-            end: occEnd,
-            id: `${exception.id}-e${idx}`,
-            accountId: exception.accountId,
-            calendarId: exception.calendarId,
-            title: item.summary || '',
-            location: item.location || '',
-            description: item.description || '',
-            isAllDay: occEnd - occStart >= 86400 - 1,
-            isCancelled: status.toUpperCase() === 'CANCELLED',
-            isPending: isTentativeStatus || isAwaitingMyResponse,
-            isException: true,
-            isRecurring: true, // Exceptions are always from recurring series
-            organizer: item.organizer ? { email: item.organizer } : null,
-            attendees,
-          });
+        // Determine if event should show "pending" styling
+        const isTentativeStatus = status.toUpperCase() === 'TENTATIVE';
+        const myAttendee = attendees.find(a => a.email && new Contact({ email: a.email }).isMe());
+        const myPartstat = myAttendee?.partstat?.toUpperCase();
+        const isAwaitingMyResponse =
+          myAttendee && myPartstat !== 'ACCEPTED' && myPartstat !== 'DECLINED';
+
+        occurrences.push({
+          start: occStart,
+          end: occEnd,
+          id: `${exception.id}-e0`,
+          accountId: exception.accountId,
+          calendarId: exception.calendarId,
+          title: icsEvent.summary || '',
+          location: icsEvent.location || '',
+          description: icsEvent.description || '',
+          isAllDay: occEnd - occStart >= 86400 - 1,
+          isCancelled: status.toUpperCase() === 'CANCELLED',
+          isPending: isTentativeStatus || isAwaitingMyResponse,
+          isException: true,
+          isRecurring: true, // Exceptions are always from recurring series
+          organizer: icsEvent.organizer ? { email: icsEvent.organizer } : null,
+          attendees,
         });
       } catch (err) {
-        console.error(`Failed to expand ICS for exception ${exception.id}:`, err);
+        console.error(`Failed to parse ICS for exception ${exception.id}:`, err);
       }
     }
   }

@@ -67,7 +67,9 @@ export interface RecurrenceInfo {
  */
 export function generateUID(): string {
   const timestamp = Date.now().toString(36);
-  const random = Math.random().toString(36).substring(2, 15);
+  const random = Math.random()
+    .toString(36)
+    .substring(2, 15);
   return `${timestamp}-${random}@mailspring`;
 }
 
@@ -153,6 +155,28 @@ function createICALTime(
 }
 
 /**
+ * Adds an EXDATE property to a VEVENT, preserving the TZID parameter when needed.
+ *
+ * ICAL.js's `addPropertyWithValue('exdate', time)` does NOT set the TZID parameter
+ * even when the time has a timezone attached. This causes ical-expander to fail to
+ * match the EXDATE against zoned occurrences (the EXDATE is serialized as floating
+ * time instead of zoned time). We must manually create the property and set TZID.
+ */
+function addExdateProperty(
+  vevent: ICALComponent,
+  exdateTime: ICALTime,
+  ical: ICAL,
+  zone?: ICALTimezone | null
+): void {
+  const exProp = new ical.Property('exdate', vevent);
+  if (zone && zone.tzid && zone.tzid !== 'UTC' && zone.tzid !== 'floating') {
+    exProp.setParameter('tzid', zone.tzid);
+  }
+  exProp.setValue(exdateTime);
+  vevent.addProperty(exProp);
+}
+
+/**
  * Validates timestamp options and throws if invalid
  */
 function validateTimestamps(start: number, end: number): void {
@@ -186,7 +210,9 @@ export function createVTIMEZONEString(tzId: string, referenceDate: Date): string
   const utcOffsetMin = m.utcOffset(); // e.g. -360 for CST (UTC-6)
   const absMin = Math.abs(utcOffsetMin);
   const sign = utcOffsetMin >= 0 ? '+' : '-';
-  const offsetStr = `${sign}${String(Math.floor(absMin / 60)).padStart(2, '0')}${String(absMin % 60).padStart(2, '0')}`;
+  const offsetStr = `${sign}${String(Math.floor(absMin / 60)).padStart(2, '0')}${String(
+    absMin % 60
+  ).padStart(2, '0')}`;
   return [
     'BEGIN:VTIMEZONE',
     `TZID:${tzId}`,
@@ -244,7 +270,10 @@ export function createICSString(options: CreateEventOptions): string {
 
     const vtimezoneComp = new ical.Component(
       ical.parse(
-        `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${createVTIMEZONEString(options.timezone, options.start)}\r\nEND:VCALENDAR`
+        `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${createVTIMEZONEString(
+          options.timezone,
+          options.start
+        )}\r\nEND:VCALENDAR`
       )
     ).getFirstSubcomponent('vtimezone');
     calendar.addSubcomponent(vtimezoneComp);
@@ -394,7 +423,10 @@ export function updateEventTimes(ics: string, options: UpdateTimesOptions): stri
       }
       const vtimezoneComp = new ical.Component(
         ical.parse(
-          `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${createVTIMEZONEString(options.timezone, startDate)}\r\nEND:VCALENDAR`
+          `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${createVTIMEZONEString(
+            options.timezone,
+            startDate
+          )}\r\nEND:VCALENDAR`
         )
       ).getFirstSubcomponent('vtimezone');
       vcalendar.addSubcomponent(vtimezoneComp);
@@ -460,7 +492,7 @@ export function createRecurrenceException(
 
   // Add EXDATE to master to exclude this occurrence (preserve timezone)
   const exdateTime = createICALTime(originalDate, isAllDay, ical, originalStartZone);
-  masterVevent.addPropertyWithValue('exdate', exdateTime);
+  addExdateProperty(masterVevent, exdateTime, ical, originalStartZone);
 
   // Create exception VCALENDAR
   const exceptionCal = new ical.Component(['vcalendar', [], []]);
@@ -608,7 +640,7 @@ export function addExclusionDate(ics: string, occurrenceStart: number, isAllDay:
   // Create EXDATE time from occurrence start (preserve timezone)
   const occurrenceDate = new Date(occurrenceStart * 1000);
   const exdateTime = createICALTime(occurrenceDate, isAllDay, ical, originalZone);
-  vevent.addPropertyWithValue('exdate', exdateTime);
+  addExdateProperty(vevent, exdateTime, ical, originalZone);
 
   // Update DTSTAMP to indicate modification
   vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
