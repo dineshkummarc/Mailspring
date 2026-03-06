@@ -228,9 +228,6 @@ export class MultiselectList extends React.Component<MultiselectListProps, Multi
         <KeyCommandsRegion
           globalHandlers={this._globalKeymapHandlers()}
           className={className}
-          role="listbox"
-          aria-multiselectable="true"
-          aria-label={localized('Thread list')}
         >
           <ListTabular
             ref={this.listRef}

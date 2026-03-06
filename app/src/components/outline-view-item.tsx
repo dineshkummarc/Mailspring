@@ -24,6 +24,7 @@ const CounterStyles = {
 type OutlineViewItemProps = {
   item: IOutlineViewItem;
   level?: number;
+  isFirst?: boolean;
 };
 type OutlineViewItemState = {
   editing: boolean;
@@ -375,7 +376,7 @@ class OutlineViewItem extends Component<OutlineViewItemProps, OutlineViewItemSta
         aria-selected={item.selected || false}
         aria-expanded={hasChildren ? !item.collapsed : undefined}
         aria-label={item.name}
-        tabIndex={item.selected ? 0 : -1}
+        tabIndex={item.selected || this.props.isFirst ? 0 : -1}
       >
         <span className={containerClasses}>
           <DisclosureTriangle

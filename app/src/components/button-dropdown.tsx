@@ -69,7 +69,7 @@ export class ButtonDropdown extends React.Component<ButtonDropdownProps, ButtonD
             aria-label={this.props.primaryTitle}
             onClick={this.props.primaryClick}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') this.props.primaryClick(e as any);
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.props.primaryClick(); }
             }}
           >
             {this.props.primaryItem}
@@ -78,17 +78,17 @@ export class ButtonDropdown extends React.Component<ButtonDropdownProps, ButtonD
             role="button"
             tabIndex={0}
             aria-label={localized('More options')}
-            aria-haspopup="listbox"
+            aria-haspopup="menu"
             aria-expanded={this.state.open !== false}
             className="secondary-picker"
             onClick={this.toggleDropdown}
             onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') this.toggleDropdown();
+              if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this.toggleDropdown(); }
             }}
           >
             <RetinaImg name={'icon-thread-disclosure.png'} mode={RetinaImg.Mode.ContentIsMask} />
           </div>
-          <div role="listbox" className="secondary-items" onMouseDown={this._onMenuClick}>
+          <div role="menu" className="secondary-items" onMouseDown={this._onMenuClick}>
             {menu}
           </div>
         </div>

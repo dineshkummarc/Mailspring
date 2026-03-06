@@ -242,7 +242,10 @@ export class OutlineView extends Component<OutlineViewProps, OutlineViewState> {
   }
 
   _renderItems() {
-    return this.props.items.map((item) => <OutlineViewItem key={item.id} item={item} />);
+    const noneSelected = !this.props.items.some(item => item.selected);
+    return this.props.items.map((item, idx) => (
+      <OutlineViewItem key={item.id} item={item} isFirst={noneSelected && idx === 0} />
+    ));
   }
 
   _renderOutline(allowCreate, collapsed) {
