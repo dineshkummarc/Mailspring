@@ -473,9 +473,22 @@ class MessageListReplyArea extends React.Component<{ onClick: () => void; replyT
     this.setState({ forcePlaintext: AppEnv.keymaps.getIsAltKeyDown() });
   };
 
+  _onKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      this.props.onClick();
+    }
+  };
+
   render() {
     return (
-      <div className="footer-reply-area-wrap" onClick={this.props.onClick}>
+      <div
+        className="footer-reply-area-wrap"
+        role="button"
+        tabIndex={0}
+        onClick={this.props.onClick}
+        onKeyDown={this._onKeyDown}
+      >
         <div className="footer-reply-area">
           <RetinaImg
             name={`${this.props.replyType}-footer.png`}

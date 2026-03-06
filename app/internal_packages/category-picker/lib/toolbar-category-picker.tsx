@@ -8,7 +8,7 @@ import {
   WorkspaceStore,
   Thread,
 } from 'mailspring-exports';
-import { RetinaImg, KeyCommandsRegion } from 'mailspring-component-kit';
+import { RetinaImg, KeyCommandsRegion, RovingTabIndexToolbar } from 'mailspring-component-kit';
 
 import MovePickerPopover from './move-picker-popover';
 import LabelPickerPopover from './label-picker-popover';
@@ -81,7 +81,11 @@ class MovePicker extends React.Component<{ items: Thread[] }> {
     }
 
     return (
-      <div className="button-group" style={{ order: -103 }}>
+      <RovingTabIndexToolbar
+        label={localized('Category Actions')}
+        className="button-group"
+        style={{ order: -103 }}
+      >
         <KeyCommandsRegion globalHandlers={handlers}>
           <button
             tabIndex={-1}
@@ -106,7 +110,7 @@ class MovePicker extends React.Component<{ items: Thread[] }> {
             </button>
           )}
         </KeyCommandsRegion>
-      </div>
+      </RovingTabIndexToolbar>
     );
   }
 }

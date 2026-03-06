@@ -25,13 +25,20 @@ export class RovingTabIndexToolbar extends React.Component<
   private _ref = React.createRef<HTMLDivElement>();
   state = { focusedIndex: 0 };
 
+  private _getFlexOrder(el: HTMLElement): number {
+    return parseInt(window.getComputedStyle(el).order, 10) || 0;
+  }
+
   private _getFocusableChildren(): HTMLElement[] {
     if (!this._ref.current) return [];
-    return Array.from(
+    const elements = Array.from(
       this._ref.current.querySelectorAll<HTMLElement>(
         'button:not([disabled]), [role="button"]:not([aria-disabled="true"])'
       )
     ).filter(el => !el.hasAttribute('disabled'));
+
+    // Sort by visual flex order so ArrowLeft/Right respect CSS `order` properties.
+    return elements.sort((a, b) => this._getFlexOrder(a) - this._getFlexOrder(b));
   }
 
   private _updateTabIndices(focusedIdx: number) {
@@ -82,9 +89,17 @@ export class RovingTabIndexToolbar extends React.Component<
     this._updateTabIndices(this.state.focusedIndex);
   }
 
-  componentDidUpdate(_: RovingTabIndexToolbarProps, prevState: RovingTabIndexToolbarState) {
-    if (prevState.focusedIndex !== this.state.focusedIndex) {
-      this._updateTabIndices(this.state.focusedIndex);
+  componentDidUpdate() {
+    // Always re-sync tabIndices after any update: children may have been added or
+    // removed (e.g. Cc/Bcc buttons disappearing after activation), which changes
+    // which index should hold tabIndex=0 even if focusedIndex didn't change.
+    const children = this._getFocusableChildren();
+    const clampedIndex = children.length > 0
+      ? Math.min(this.state.focusedIndex, children.length - 1)
+      : 0;
+    this._updateTabIndices(clampedIndex);
+    if (clampedIndex !== this.state.focusedIndex) {
+      this.setState({ focusedIndex: clampedIndex });
     }
   }
 

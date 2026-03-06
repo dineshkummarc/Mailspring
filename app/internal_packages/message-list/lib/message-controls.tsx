@@ -121,7 +121,10 @@ export default class MessageControls extends React.Component<MessageControlsProp
 
   _onShowOriginal = async () => {
     const { message } = this.props;
-    const filepath = require('path').join(require('@electron/remote').app.getPath('temp'), message.id);
+    const filepath = require('path').join(
+      require('@electron/remote').app.getPath('temp'),
+      message.id
+    );
     const task = new GetMessageRFC2822Task({
       messageId: message.id,
       accountId: message.accountId,
@@ -176,7 +179,7 @@ export default class MessageControls extends React.Component<MessageControlsProp
         <div
           className="message-actions-ellipsis"
           role="button"
-          tabIndex={0}
+          tabIndex={-1}
           aria-label={localized('More message actions')}
           onClick={this._onShowActionsMenu}
           onKeyDown={e => {
@@ -186,7 +189,11 @@ export default class MessageControls extends React.Component<MessageControlsProp
             }
           }}
         >
-          <RetinaImg name={'message-actions-ellipsis.png'} mode={RetinaImg.Mode.ContentIsMask} aria-hidden="true" />
+          <RetinaImg
+            name={'message-actions-ellipsis.png'}
+            mode={RetinaImg.Mode.ContentIsMask}
+            aria-hidden="true"
+          />
         </div>
       </div>
     );
