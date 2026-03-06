@@ -164,19 +164,24 @@ export class CalendarEventPopover extends React.Component<
   }
 
   onEdit = async () => {
-    // Load the actual recurrence info from the event's ICS data
+    // Load actual recurrence and timezone from the event's ICS data
     let repeat: RepeatOption = 'none';
+    let timezone = this.state.timezone;
     try {
       const eventId = parseEventIdFromOccurrence(this.props.event.id);
       const event = await DatabaseStore.find<Event>(Event, eventId);
       if (event) {
         const recurrenceInfo = ICSEventHelpers.getRecurrenceInfo(event.ics);
         repeat = frequencyToRepeatOption(recurrenceInfo.frequency);
+        const eventTz = ICSEventHelpers.getEventTimezone(event.ics);
+        if (eventTz) {
+          timezone = eventTz;
+        }
       }
     } catch (e) {
-      // Fall back to 'none' if we can't read the event
+      // Fall back to defaults if we can't read the event
     }
-    this.setState({ editing: true, repeat });
+    this.setState({ editing: true, repeat, timezone });
   };
 
   getStartMoment = () => moment(this.state.start * 1000);
@@ -222,11 +227,15 @@ export class CalendarEventPopover extends React.Component<
     // Update description
     ics = ICSEventHelpers.updateEventProperty(ics, 'description', this.state.description || '');
 
-    // Update times
+    // Update attendees
+    ics = ICSEventHelpers.updateAttendees(ics, this.state.attendees || []);
+
+    // Update times (with timezone if the user selected one)
     ics = ICSEventHelpers.updateEventTimes(ics, {
       start: this.state.start,
       end: this.state.end,
       isAllDay: this.state.allDay,
+      timezone: this.state.timezone,
     });
 
     // Update recurrence rule
@@ -259,6 +268,7 @@ export class CalendarEventPopover extends React.Component<
       description,
       attendees,
       repeat,
+      timezone,
       selectedCalendarId,
       selectedAccountId,
     } = this.state;
@@ -279,6 +289,7 @@ export class CalendarEventPopover extends React.Component<
           ? attendees.map((a) => ({ email: a.email, name: a.name }))
           : undefined,
       recurrenceRule: repeatOptionToRRule(repeat) || undefined,
+      timezone,
     });
   };
 
@@ -454,12 +465,7 @@ export class CalendarEventPopover extends React.Component<
     if (this.state.editing || this.props.isNewEvent) {
       return this.renderEditable();
     }
-    return (
-      <CalendarEventPopoverUnenditable
-        {...this.props}
-        onEdit={() => this.setState({ editing: true })}
-      />
-    );
+    return <CalendarEventPopoverUnenditable {...this.props} onEdit={this.onEdit} />;
   }
 }
 

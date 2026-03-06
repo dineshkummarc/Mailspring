@@ -38,6 +38,7 @@ export interface UpdateTimesOptions {
   start: number; // Unix timestamp in seconds
   end: number; // Unix timestamp in seconds
   isAllDay?: boolean;
+  timezone?: string; // Optional IANA timezone to set (overrides event's original timezone)
 }
 
 /**
@@ -343,19 +344,70 @@ export function updateEventTimes(ics: string, options: UpdateTimesOptions): stri
   const endDate = new Date(options.end * 1000);
   const isAllDay = options.isAllDay ?? false;
 
-  // Get the original timezone to preserve it for timed events
-  const originalStartZone = event.startDate?.zone;
-  const originalEndZone = event.endDate?.zone;
-
-  // Create new times, preserving timezone for timed events
-  event.startDate = createICALTime(startDate, isAllDay, ical, originalStartZone);
-  event.endDate = createICALTime(endDate, isAllDay, ical, originalEndZone);
-
-  // Update DTSTAMP to indicate modification
   const vevent = root.name === 'vevent' ? root : root.getFirstSubcomponent('vevent');
   if (!vevent) {
     throw new Error('Invalid ICS: no VEVENT component found');
   }
+
+  if (!isAllDay && options.timezone) {
+    // User selected a specific timezone — encode wall-clock time in that zone.
+    // This mirrors the timezone path in createICSString.
+    const momentTz = require('moment-timezone');
+    const startM = momentTz(startDate).tz(options.timezone);
+    const endM = momentTz(endDate).tz(options.timezone);
+
+    event.startDate = new ical.Time(
+      {
+        year: startM.year(),
+        month: startM.month() + 1,
+        day: startM.date(),
+        hour: startM.hour(),
+        minute: startM.minute(),
+        second: startM.second(),
+        isDate: false,
+      },
+      ical.Timezone.localTimezone
+    );
+    event.endDate = new ical.Time(
+      {
+        year: endM.year(),
+        month: endM.month() + 1,
+        day: endM.date(),
+        hour: endM.hour(),
+        minute: endM.minute(),
+        second: endM.second(),
+        isDate: false,
+      },
+      ical.Timezone.localTimezone
+    );
+
+    // Stamp TZID on the date properties
+    vevent.getFirstProperty('dtstart')?.setParameter('tzid', options.timezone);
+    vevent.getFirstProperty('dtend')?.setParameter('tzid', options.timezone);
+
+    // Ensure a VTIMEZONE component exists in the parent VCALENDAR
+    const vcalendar = root.name === 'vcalendar' ? root : null;
+    if (vcalendar) {
+      // Remove existing VTIMEZONE components and add the current one
+      for (const vtz of vcalendar.getAllSubcomponents('vtimezone')) {
+        vcalendar.removeSubcomponent(vtz);
+      }
+      const vtimezoneComp = new ical.Component(
+        ical.parse(
+          `BEGIN:VCALENDAR\r\nVERSION:2.0\r\n${createVTIMEZONEString(options.timezone, startDate)}\r\nEND:VCALENDAR`
+        )
+      ).getFirstSubcomponent('vtimezone');
+      vcalendar.addSubcomponent(vtimezoneComp);
+    }
+  } else {
+    // Preserve the original timezone for timed events, or use floating for all-day
+    const originalStartZone = event.startDate?.zone;
+    const originalEndZone = event.endDate?.zone;
+    event.startDate = createICALTime(startDate, isAllDay, ical, originalStartZone);
+    event.endDate = createICALTime(endDate, isAllDay, ical, originalEndZone);
+  }
+
+  // Update DTSTAMP to indicate modification
   vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
 
   // Increment SEQUENCE if present (for proper sync)
@@ -598,6 +650,59 @@ export function updateRecurrenceRule(ics: string, rruleString: string | null): s
   vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
 
   return root.toString();
+}
+
+/**
+ * Updates the attendees (ATTENDEE properties) on an event's ICS data.
+ * Replaces all existing attendees with the provided list.
+ *
+ * @param ics - The original ICS string
+ * @param attendees - Array of attendee objects
+ * @returns The modified ICS string
+ */
+export function updateAttendees(
+  ics: string,
+  attendees: Array<{ email: string; name?: string | null; partstat?: string }>
+): string {
+  const ical = getICAL();
+  const { root } = parseICSString(ics);
+
+  const vevent = root.name === 'vevent' ? root : root.getFirstSubcomponent('vevent');
+  if (!vevent) {
+    throw new Error('Invalid ICS: no VEVENT component found');
+  }
+
+  // Remove all existing attendees
+  vevent.removeAllProperties('attendee');
+
+  // Add new attendees
+  for (const attendee of attendees) {
+    const prop = vevent.addProperty('attendee' as any);
+    prop.setValue(`mailto:${attendee.email}`);
+    if (attendee.name) {
+      prop.setParameter('cn', attendee.name);
+    }
+    prop.setParameter('partstat', attendee.partstat || 'NEEDS-ACTION');
+    prop.setParameter('role', 'REQ-PARTICIPANT');
+  }
+
+  // Update DTSTAMP
+  vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
+
+  return root.toString();
+}
+
+/**
+ * Returns the IANA timezone identifier (TZID) from the event's DTSTART, or null
+ * if the event uses UTC/floating time.
+ */
+export function getEventTimezone(ics: string): string | null {
+  const { event } = parseICSString(ics);
+  const zone = event.startDate?.zone;
+  if (zone && zone.tzid && zone.tzid !== 'UTC' && zone.tzid !== 'floating') {
+    return zone.tzid;
+  }
+  return null;
 }
 
 /**
