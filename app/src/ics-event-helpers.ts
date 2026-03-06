@@ -651,6 +651,12 @@ export function updateRecurrenceRule(ics: string, rruleString: string | null): s
     vevent.removeAllProperties('rdate');
   }
 
+  // Increment SEQUENCE if present (for proper sync per RFC 5545)
+  const sequence = vevent.getFirstPropertyValue('sequence');
+  if (sequence !== null) {
+    vevent.updatePropertyWithValue('sequence', (parseInt(String(sequence), 10) || 0) + 1);
+  }
+
   // Update DTSTAMP to indicate modification
   vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
 

@@ -10,6 +10,7 @@ import {
   localized,
   Autolink,
   ICSEventHelpers,
+  CalendarUtils,
   SyncbackEventTask,
 } from 'mailspring-exports';
 import {
@@ -33,6 +34,7 @@ import { ShowAsSelector, ShowAsOption } from './show-as-selector';
 import { EventPopoverActions } from './event-popover-actions';
 import { TimeZoneSelector } from './timezone-selector';
 import { parseEventIdFromOccurrence } from './calendar-drag-utils';
+import { showRecurringEventDialog } from './recurring-event-dialog';
 
 /**
  * Convert a RepeatOption UI value to an RRULE string (or null for 'none').
@@ -187,6 +189,27 @@ export class CalendarEventPopover extends React.Component<
   getStartMoment = () => moment(this.state.start * 1000);
   getEndMoment = () => moment(this.state.end * 1000);
 
+  /**
+   * Apply the current popover state as ICS property changes to an ICS string.
+   */
+  _applyPropertyEdits(ics: string): string {
+    ics = ICSEventHelpers.updateEventProperty(
+      ics,
+      'summary',
+      this.state.title || localized('New Event')
+    );
+    ics = ICSEventHelpers.updateEventProperty(ics, 'location', this.state.location || '');
+    ics = ICSEventHelpers.updateEventProperty(ics, 'description', this.state.description || '');
+    ics = ICSEventHelpers.updateAttendees(ics, this.state.attendees || []);
+    ics = ICSEventHelpers.updateEventTimes(ics, {
+      start: this.state.start,
+      end: this.state.end,
+      isAllDay: this.state.allDay,
+      timezone: this.state.timezone,
+    });
+    return ics;
+  }
+
   saveEdits = async (): Promise<void> => {
     if (this.props.isNewEvent) {
       await this._createNewEvent();
@@ -204,41 +227,40 @@ export class CalendarEventPopover extends React.Component<
       return;
     }
 
-    // Capture original state for undo BEFORE any modifications
+    const isRecurring =
+      ICSEventHelpers.isRecurringEvent(event.ics) && !event.isRecurrenceException();
+
+    if (isRecurring) {
+      const choice = await showRecurringEventDialog('edit', this.props.event.title);
+      if (choice === 'cancel') {
+        return;
+      }
+      if (choice === 'this-occurrence') {
+        await this._saveOccurrenceException(event);
+      } else {
+        this._saveAllOccurrences(event);
+      }
+    } else {
+      this._saveAllOccurrences(event);
+    }
+
+    this.setState({ editing: false });
+    Actions.closePopover();
+  };
+
+  /**
+   * Save edits to the master event (used for non-recurring events and "all occurrences").
+   */
+  _saveAllOccurrences(event: Event): void {
     const undoData = {
       ics: event.ics,
       recurrenceStart: event.recurrenceStart,
       recurrenceEnd: event.recurrenceEnd,
     };
 
-    // Apply all property changes to the ICS
-    let ics = event.ics;
+    let ics = this._applyPropertyEdits(event.ics);
 
-    // Update title
-    ics = ICSEventHelpers.updateEventProperty(
-      ics,
-      'summary',
-      this.state.title || localized('New Event')
-    );
-
-    // Update location
-    ics = ICSEventHelpers.updateEventProperty(ics, 'location', this.state.location || '');
-
-    // Update description
-    ics = ICSEventHelpers.updateEventProperty(ics, 'description', this.state.description || '');
-
-    // Update attendees
-    ics = ICSEventHelpers.updateAttendees(ics, this.state.attendees || []);
-
-    // Update times (with timezone if the user selected one)
-    ics = ICSEventHelpers.updateEventTimes(ics, {
-      start: this.state.start,
-      end: this.state.end,
-      isAllDay: this.state.allDay,
-      timezone: this.state.timezone,
-    });
-
-    // Update recurrence rule
+    // Update recurrence rule (only for master event edits)
     const rrule = repeatOptionToRRule(this.state.repeat);
     ics = ICSEventHelpers.updateRecurrenceRule(ics, rrule);
 
@@ -246,17 +268,91 @@ export class CalendarEventPopover extends React.Component<
     event.recurrenceStart = this.state.start;
     event.recurrenceEnd = this.state.end;
 
-    // Queue syncback task with undo support
-    const task = SyncbackEventTask.forUpdating({
-      event,
-      undoData,
-      description: localized('Edit event'),
-    });
-    Actions.queueTask(task);
+    Actions.queueTask(
+      SyncbackEventTask.forUpdating({
+        event,
+        undoData,
+        description: localized('Edit event'),
+      })
+    );
+  }
 
-    this.setState({ editing: false });
-    Actions.closePopover();
-  };
+  /**
+   * Create an exception for a single occurrence, applying property edits to the exception.
+   */
+  async _saveOccurrenceException(masterEvent: Event): Promise<void> {
+    const masterUndoData = {
+      ics: masterEvent.ics,
+      recurrenceStart: masterEvent.recurrenceStart,
+      recurrenceEnd: masterEvent.recurrenceEnd,
+    };
+
+    // The original occurrence start time from the props (before user edits)
+    const originalOccurrenceStart = this.props.event.start;
+
+    // Create the exception (adds EXDATE to master, creates exception ICS with new times)
+    const { masterIcs, exceptionIcs, recurrenceId } = ICSEventHelpers.createRecurrenceException(
+      masterEvent.ics,
+      originalOccurrenceStart,
+      this.state.start,
+      this.state.end,
+      this.state.allDay
+    );
+
+    // Update master event with EXDATE
+    masterEvent.ics = masterIcs;
+
+    // Apply property edits (title, location, description, attendees) to the exception ICS
+    let editedExceptionIcs = ICSEventHelpers.updateEventProperty(
+      exceptionIcs,
+      'summary',
+      this.state.title || localized('New Event')
+    );
+    editedExceptionIcs = ICSEventHelpers.updateEventProperty(
+      editedExceptionIcs,
+      'location',
+      this.state.location || ''
+    );
+    editedExceptionIcs = ICSEventHelpers.updateEventProperty(
+      editedExceptionIcs,
+      'description',
+      this.state.description || ''
+    );
+    editedExceptionIcs = ICSEventHelpers.updateAttendees(
+      editedExceptionIcs,
+      this.state.attendees || []
+    );
+
+    // Create exception Event model
+    const exceptionEvent = new Event({
+      accountId: masterEvent.accountId,
+      calendarId: masterEvent.calendarId,
+      ics: editedExceptionIcs,
+      icsuid: masterEvent.icsuid,
+      recurrenceId: recurrenceId,
+      recurrenceStart: this.state.start,
+      recurrenceEnd: this.state.end,
+      status: masterEvent.status,
+    });
+
+    // Queue task for master event with undo support
+    Actions.queueTask(
+      SyncbackEventTask.forUpdating({
+        event: masterEvent,
+        undoData: masterUndoData,
+        description: localized('Edit occurrence'),
+      })
+    );
+
+    // Queue task for exception event
+    Actions.queueTask(
+      SyncbackEventTask.forCreating({
+        event: exceptionEvent,
+        calendarId: masterEvent.calendarId,
+        accountId: masterEvent.accountId,
+      })
+    );
+  }
 
   _createNewEvent = async (): Promise<void> => {
     const {

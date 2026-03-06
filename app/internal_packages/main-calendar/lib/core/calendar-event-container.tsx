@@ -216,10 +216,18 @@ export class CalendarEventContainer extends React.Component<CalendarEventContain
   }
 
   _onWindowMouseUp = (event: MouseEvent) => {
-    if (ReactDOM.findDOMNode(this).contains(event.target)) {
+    if ((ReactDOM.findDOMNode(this) as Element).contains(event.target as Node)) {
       return;
     }
-    this._onCalendarMouseUp(event);
+    // Handle mouseUp outside the calendar container (e.g., during a drag).
+    // Call _runPropsHandler directly with the native MouseEvent instead of
+    // going through _onCalendarMouseUp which expects React.MouseEvent.
+    this._DOMCache = {};
+    if (!this._mouseIsDown) {
+      return;
+    }
+    this._mouseIsDown = false;
+    this._runPropsHandler('onCalendarMouseUp', event);
   };
 
   render() {
