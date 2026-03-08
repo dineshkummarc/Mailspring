@@ -45,10 +45,8 @@ export interface UpdateTimesOptions {
  * Result of creating a recurrence exception
  */
 export interface RecurrenceExceptionResult {
-  /** Updated master ICS with EXDATE added */
+  /** Updated master ICS with the exception VEVENT embedded inline */
   masterIcs: string;
-  /** New exception event ICS */
-  exceptionIcs: string;
   /** The RECURRENCE-ID value for the exception */
   recurrenceId: string;
 }
@@ -174,6 +172,71 @@ function addExdateProperty(
   }
   exProp.setValue(exdateTime);
   vevent.addProperty(exProp);
+}
+
+/**
+ * Registers all VTIMEZONE subcomponents from a VCALENDAR with the ICAL.js
+ * TimezoneService so that subsequent `toJSDate()` calls on TZID-relative times
+ * resolve correctly. Duplicate registrations are silently ignored.
+ */
+function registerTimezones(vcalendar: ICALComponent, ical: ICAL): void {
+  for (const vtz of vcalendar.getAllSubcomponents('vtimezone')) {
+    try {
+      ical.TimezoneService.register(vtz);
+    } catch (_) {
+      // Ignore duplicate registrations (same TZID registered more than once)
+    }
+  }
+}
+
+/**
+ * Removes an existing exception VEVENT from a VCALENDAR that matches the given
+ * target time (in UTC milliseconds). Uses `toJSDate().getTime()` for comparison
+ * after registering timezones, so TZID-formatted and UTC-formatted RECURRENCE-IDs
+ * are both correctly identified as the same moment. Falls back to string comparison
+ * if `toJSDate()` throws (e.g., unregistered timezone).
+ *
+ * This implements the "upsert" behaviour: re-editing an existing exception replaces
+ * the old VEVENT rather than adding a duplicate.
+ *
+ * @param vcalendar - The VCALENDAR component to search within
+ * @param targetMs - The expected RECURRENCE-ID moment in UTC milliseconds
+ * @param recurrenceId - The formatted RECURRENCE-ID string (used as a string fallback)
+ * @param isAllDay - Whether the event is all-day (affects string-fallback comparison)
+ * @param ical - The ICAL library reference
+ */
+function removeExistingExceptionVevent(
+  vcalendar: ICALComponent,
+  targetMs: number,
+  recurrenceId: string,
+  isAllDay: boolean,
+  ical: ICAL
+): void {
+  registerTimezones(vcalendar, ical);
+
+  for (const existing of vcalendar.getAllSubcomponents('vevent')) {
+    const ridValue = existing.getFirstPropertyValue('recurrence-id') as any;
+    if (!ridValue) continue;
+
+    try {
+      if (ridValue.toJSDate().getTime() === targetMs) {
+        vcalendar.removeSubcomponent(existing);
+        break;
+      }
+    } catch (_) {
+      // Fallback: string comparison (e.g., if toJSDate throws for an unknown timezone)
+      const ridStr =
+        typeof ridValue.toString === 'function' ? ridValue.toString() : String(ridValue);
+      const ridFormatted = isAllDay
+        ? ridStr.replace(/[^0-9]/g, '').substring(0, 8)
+        : ridStr.replace(/[^0-9TZ]/g, '');
+      const targetFormatted = recurrenceId.replace(/[^0-9TZ]/g, '');
+      if (ridFormatted === targetFormatted || ridStr === recurrenceId) {
+        vcalendar.removeSubcomponent(existing);
+        break;
+      }
+    }
+  }
 }
 
 /**
@@ -452,15 +515,22 @@ export function updateEventTimes(ics: string, options: UpdateTimesOptions): stri
 }
 
 /**
- * Creates an exception instance for a recurring event.
- * Used when modifying a single occurrence of a recurring event.
+ * Creates an exception instance for a recurring event by embedding the exception
+ * VEVENT inline in the master VCALENDAR (RFC 4791 §4.1 / RFC 5545 compliant).
+ *
+ * Unlike the old approach (separate VCALENDAR + EXDATE), this embeds the exception
+ * VEVENT directly into the master's VCALENDAR so the entire updated master ICS can
+ * be PUT to the same resource as a single update task.
+ *
+ * Upsert semantics: if a VEVENT with the same RECURRENCE-ID already exists in the
+ * master VCALENDAR (e.g. re-editing an already-excepted occurrence), it is replaced.
  *
  * @param masterIcs - The master event's ICS data
  * @param originalOccurrenceStart - The original start time of the occurrence being modified (unix seconds)
  * @param newStart - New start time (unix seconds)
  * @param newEnd - New end time (unix seconds)
  * @param isAllDay - Whether this is an all-day event
- * @returns Object with modified master ICS (with EXDATE) and new exception ICS
+ * @returns Object with updated master ICS (exception embedded inline) and the RECURRENCE-ID string
  */
 export function createRecurrenceException(
   masterIcs: string,
@@ -482,59 +552,199 @@ export function createRecurrenceException(
   const originalDate = new Date(originalOccurrenceStart * 1000);
   const recurrenceId = isAllDay ? formatDateOnly(originalDate) : formatDateTimeUTC(originalDate);
 
-  // Get the master VEVENT component
-  const masterVevent =
-    masterRoot.name === 'vevent' ? masterRoot : masterRoot.getFirstSubcomponent('vevent');
+  // masterRoot must be a VCALENDAR (not a bare VEVENT) for inline embedding
+  const vcalendar = masterRoot.name === 'vcalendar' ? masterRoot : null;
+  const masterVevent = vcalendar
+    ? vcalendar.getFirstSubcomponent('vevent')
+    : masterRoot.name === 'vevent'
+    ? masterRoot
+    : null;
 
   if (!masterVevent) {
     throw new Error('Invalid ICS: no VEVENT component found');
   }
 
-  // Add EXDATE to master to exclude this occurrence (preserve timezone)
-  const exdateTime = createICALTime(originalDate, isAllDay, ical, originalStartZone);
-  addExdateProperty(masterVevent, exdateTime, ical, originalStartZone);
+  // Upsert: remove any existing exception VEVENT with this RECURRENCE-ID so that
+  // re-editing a previously excepted occurrence replaces the old VEVENT rather than
+  // accumulating duplicates. The helper compares by UTC milliseconds so TZID-formatted
+  // and UTC-formatted RECURRENCE-IDs are recognised as the same moment.
+  const targetMs = originalDate.getTime();
+  if (vcalendar) {
+    removeExistingExceptionVevent(vcalendar, targetMs, recurrenceId, isAllDay, ical);
+  }
 
-  // Create exception VCALENDAR
-  const exceptionCal = new ical.Component(['vcalendar', [], []]);
-  exceptionCal.updatePropertyWithValue('prodid', '-//Mailspring//Calendar//EN');
-  exceptionCal.updatePropertyWithValue('version', '2.0');
+  // Deep-clone the master VEVENT for the exception.
+  // ical.Component.toJSON() returns a reference to the internal jCal array, NOT a copy.
+  // Without JSON.parse/stringify the cloned component shares the same array as the master,
+  // so every mutation below (removeAllProperties, updatePropertyWithValue, etc.) silently
+  // mutates the master VEVENT too, producing two identical exception VEVENTs and no master.
+  const exceptionVevent = new ical.Component(JSON.parse(JSON.stringify(masterVevent.toJSON())));
 
-  // Clone the VEVENT for the exception
-  const exceptionVevent = new ical.Component(masterVevent.toJSON());
+  // Remove recurrence rule and exclusion dates from the exception (it's a single instance)
+  exceptionVevent.removeAllProperties('rrule');
+  exceptionVevent.removeAllProperties('rdate');
+  exceptionVevent.removeAllProperties('exdate');
 
-  // Remove recurrence rule from exception (it's a single instance)
-  exceptionVevent.removeProperty('rrule');
-  exceptionVevent.removeProperty('rdate');
-  exceptionVevent.removeProperty('exdate');
-
-  // Set RECURRENCE-ID to link this exception to the master (preserve timezone)
-  const recIdTime = createICALTime(originalDate, isAllDay, ical, originalStartZone);
+  // Set RECURRENCE-ID using UTC format so it is unambiguous and matches the returned
+  // recurrenceId string (which is also UTC via formatDateTimeUTC).
+  // Using createICALTime with a named timezone produces a floating-time serialization
+  // (no TZID parameter on the property) because updatePropertyWithValue does not auto-set TZID.
+  const recIdTime = isAllDay
+    ? createAllDayTime(originalDate, ical)
+    : ical.Time.fromJSDate(originalDate, true); // UTC → serializes as YYYYMMDDTHHMMSSz
   exceptionVevent.updatePropertyWithValue('recurrence-id', recIdTime);
 
   // Set new times on the exception (preserve timezone)
   const newStartDate = new Date(newStart * 1000);
   const newEndDate = new Date(newEnd * 1000);
+  const exceptionICALEvent = new ical.Event(exceptionVevent);
+  exceptionICALEvent.startDate = createICALTime(newStartDate, isAllDay, ical, originalStartZone);
+  exceptionICALEvent.endDate = createICALTime(newEndDate, isAllDay, ical, originalStartZone);
 
-  const exceptionEvent = new ical.Event(exceptionVevent);
-  exceptionEvent.startDate = createICALTime(newStartDate, isAllDay, ical, originalStartZone);
-  exceptionEvent.endDate = createICALTime(newEndDate, isAllDay, ical, originalStartZone);
-
-  // Update DTSTAMP on both
+  // Update DTSTAMP and increment SEQUENCE on the exception
   const now = ical.Time.now();
   masterVevent.updatePropertyWithValue('dtstamp', now);
   exceptionVevent.updatePropertyWithValue('dtstamp', now);
-
-  // Increment SEQUENCE on exception
   const sequence = exceptionVevent.getFirstPropertyValue('sequence');
   exceptionVevent.updatePropertyWithValue('sequence', (parseInt(String(sequence), 10) || 0) + 1);
 
-  exceptionCal.addSubcomponent(exceptionVevent);
+  // Embed the exception VEVENT inline in the master VCALENDAR
+  if (vcalendar) {
+    vcalendar.addSubcomponent(exceptionVevent);
+  }
 
   return {
     masterIcs: masterRoot.toString(),
-    exceptionIcs: exceptionCal.toString(),
     recurrenceId,
   };
+}
+
+/**
+ * Applies property edits (summary, location, description, attendees) to an inline
+ * exception VEVENT inside a master VCALENDAR ICS string.
+ *
+ * This is needed because `updateEventProperty` and `updateAttendees` target the
+ * first VEVENT (the master), not a specific exception VEVENT identified by RECURRENCE-ID.
+ *
+ * @param masterIcs - Master VCALENDAR ICS containing the inline exception VEVENT
+ * @param recurrenceId - The RECURRENCE-ID string of the exception to edit
+ * @param edits - Property values to apply
+ * @returns Updated master ICS string
+ */
+export function applyEditsToException(
+  masterIcs: string,
+  recurrenceId: string,
+  edits: {
+    summary?: string;
+    location?: string;
+    description?: string;
+    attendees?: Array<{ email: string; name?: string | null; partstat?: string }>;
+  }
+): string {
+  const ical = getICAL();
+  const { root } = parseICSString(masterIcs);
+
+  const vcalendar = root.name === 'vcalendar' ? root : null;
+  if (!vcalendar) {
+    throw new Error('Invalid ICS: expected VCALENDAR root');
+  }
+
+  // Find the exception VEVENT by RECURRENCE-ID
+  let exceptionVevent: ICALComponent | null = null;
+  for (const vevent of vcalendar.getAllSubcomponents('vevent')) {
+    const rid = vevent.getFirstPropertyValue('recurrence-id');
+    if (rid) {
+      const ridStr =
+        typeof rid === 'string'
+          ? rid
+          : typeof (rid as any).toString === 'function'
+          ? (rid as any).toString()
+          : String(rid);
+      if (ridStr === recurrenceId || ridStr.replace(/[^0-9TZ]/g, '') === recurrenceId.replace(/[^0-9TZ]/g, '')) {
+        exceptionVevent = vevent;
+        break;
+      }
+    }
+  }
+
+  if (!exceptionVevent) {
+    throw new Error(`No exception VEVENT found with RECURRENCE-ID matching ${recurrenceId}`);
+  }
+
+  const exceptionICALEvent = new ical.Event(exceptionVevent);
+
+  if (edits.summary !== undefined) {
+    exceptionICALEvent.summary = edits.summary;
+  }
+  if (edits.description !== undefined) {
+    exceptionICALEvent.description = edits.description;
+  }
+  if (edits.location !== undefined) {
+    exceptionICALEvent.location = edits.location;
+  }
+  if (edits.attendees !== undefined) {
+    exceptionVevent.removeAllProperties('attendee');
+    for (const attendee of edits.attendees) {
+      const prop = exceptionVevent.addProperty('attendee' as any);
+      prop.setValue(`mailto:${attendee.email}`);
+      if (attendee.name) {
+        prop.setParameter('cn', attendee.name);
+      }
+      prop.setParameter('partstat', attendee.partstat || 'NEEDS-ACTION');
+      prop.setParameter('role', 'REQ-PARTICIPANT');
+    }
+  }
+
+  exceptionVevent.updatePropertyWithValue('dtstamp', ical.Time.now());
+
+  return root.toString();
+}
+
+/**
+ * Shifts the RECURRENCE-ID of all inline exception VEVENTs within a master VCALENDAR
+ * by the given time delta (in milliseconds). This keeps inline exceptions correctly
+ * mapped to their corresponding RRULE-generated slots after the master series is shifted.
+ *
+ * Exception DTSTART/DTEND are intentionally NOT shifted: preserving the user's explicit
+ * exception times (e.g., an exception at 2AM remains at 2AM after shifting the base
+ * series from 1AM to 3AM). Only RECURRENCE-ID shifts so ical-expander can still
+ * substitute the exception for the correct (now-shifted) occurrence slot.
+ *
+ * @param ics - Master VCALENDAR ICS containing inline exception VEVENTs
+ * @param deltaMs - Time delta in milliseconds (positive = forward, negative = backward)
+ * @returns Updated ICS string with shifted RECURRENCE-IDs
+ */
+export function shiftInlineExceptions(ics: string, deltaMs: number): string {
+  if (deltaMs === 0) return ics;
+
+  const ical = getICAL();
+  const { root } = parseICSString(ics);
+
+  const vcalendar = root.name === 'vcalendar' ? root : null;
+  if (!vcalendar) return ics;
+
+  // Register VTIMEZONE components so toJSDate() converts TZID-relative times correctly.
+  registerTimezones(vcalendar, ical);
+
+  for (const vevent of vcalendar.getAllSubcomponents('vevent')) {
+    const ridProp = vevent.getFirstProperty('recurrence-id');
+    if (!ridProp) continue; // Skip the master VEVENT (no RECURRENCE-ID)
+
+    const ridValue = ridProp.getFirstValue() as any;
+    if (!ridValue || typeof ridValue.toJSDate !== 'function') continue;
+
+    const ridDate = ridValue.toJSDate();
+    const newRidDate = new Date(ridDate.getTime() + deltaMs);
+
+    const newRidTime = (ridValue.isDate as boolean)
+      ? createAllDayTime(newRidDate, ical)
+      : ical.Time.fromJSDate(newRidDate, true); // Keep as UTC (same format as createRecurrenceException)
+
+    vevent.updatePropertyWithValue('recurrence-id', newRidTime);
+    vevent.updatePropertyWithValue('dtstamp', ical.Time.now());
+  }
+
+  return root.toString();
 }
 
 /**

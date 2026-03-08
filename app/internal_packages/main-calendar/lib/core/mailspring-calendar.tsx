@@ -641,10 +641,14 @@ export class MailspringCalendar extends React.Component<
       // Use shared utility for recurring event support (shows dialog if needed)
       const options: EventTimeChangeOptions = {
         event,
-        originalOccurrenceStart: occurrence.start,
+        // For inline exceptions, use the RECURRENCE-ID value (recurrenceIdStart), NOT the
+        // exception's moved DTSTART (start). Using start would produce the wrong RECURRENCE-ID
+        // in the new exception, causing the upsert to miss the existing one and leave a duplicate.
+        originalOccurrenceStart: occurrence.recurrenceIdStart ?? occurrence.start,
         newStart,
         newEnd,
         isAllDay: occurrence.isAllDay,
+        isException: occurrence.isException,
         description: isResize ? localized('Resize event') : localized('Move event'),
       };
 
@@ -700,10 +704,14 @@ export class MailspringCalendar extends React.Component<
       // Use shared utility for the modification logic (includes undo support)
       const options: EventTimeChangeOptions = {
         event,
-        originalOccurrenceStart: dragState.event.start,
+        // For inline exceptions, use the RECURRENCE-ID value (recurrenceIdStart), NOT the
+        // exception's moved DTSTART (start). Using start would produce the wrong RECURRENCE-ID
+        // in the new exception, causing the upsert to miss the existing one and leave a duplicate.
+        originalOccurrenceStart: dragState.event.recurrenceIdStart ?? dragState.event.start,
         newStart,
         newEnd,
         isAllDay: dragState.event.isAllDay,
+        isException: dragState.event.isException,
         description:
           dragState.mode === 'move' ? localized('Move event') : localized('Resize event'),
       };

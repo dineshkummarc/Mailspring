@@ -4,6 +4,7 @@ import {
   Matcher,
   DatabaseStore,
   CalendarUtils,
+  ICSEventHelpers,
   AndCompositeMatcher,
   OrCompositeMatcher,
   Contact,
@@ -42,6 +43,13 @@ export interface EventOccurrence {
    */
   isPending: boolean;
   isException: boolean;
+  /**
+   * For exception occurrences only: the Unix timestamp (seconds) of the **original**
+   * unmodified occurrence start, taken from the RECURRENCE-ID property. This differs
+   * from `start` when the exception has been moved to a different time.
+   * Used by the edit popover to correctly upsert the existing inline exception VEVENT.
+   */
+  recurrenceIdStart?: number;
   /** True if this event is part of a recurring series (has RRULE/RDATE) */
   isRecurring: boolean;
   organizer: { email: string } | null;
@@ -126,9 +134,7 @@ export function occurrencesForEvents(
         const icalExpander = new IcalExpander({ ics: master.ics, maxIterations: 100 });
         const expanded = icalExpander.between(new Date(startUnix * 1000), new Date(endUnix * 1000));
 
-        // Check if the master event is recurring using the already-parsed ICAL data
-        // (avoids re-parsing the ICS string via ICSEventHelpers.isRecurringEvent)
-        const masterIsRecurring = icalExpander.events.some(e => e.isRecurring());
+        const masterIsRecurring = ICSEventHelpers.isRecurringEvent(master.ics);
 
         [...expanded.events, ...expanded.occurrences].forEach((e, idx) => {
           const start = e.startDate.toJSDate().getTime() / 1000;
@@ -169,6 +175,10 @@ export function occurrencesForEvents(
             isCancelled: status.toUpperCase() === 'CANCELLED',
             isPending: isTentativeStatus || isAwaitingMyResponse,
             isException: !!item.component?.getFirstPropertyValue('recurrence-id'),
+            recurrenceIdStart: (() => {
+              const rid = item.component?.getFirstPropertyValue('recurrence-id');
+              return rid ? (rid as any).toJSDate().getTime() / 1000 : undefined;
+            })(),
             isRecurring: masterIsRecurring,
             organizer: item.organizer ? { email: item.organizer } : null,
             attendees,
