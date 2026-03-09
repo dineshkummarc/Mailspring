@@ -46,6 +46,22 @@ SEQUENCE:0
 END:VEVENT
 END:VCALENDAR`;
 
+// ICS for a standalone exception DB record: has RECURRENCE-ID but no RRULE.
+// This is what legacy (server-sent or pre-inline-fix) exception records look like.
+const STANDALONE_EXCEPTION_ICS = `BEGIN:VCALENDAR
+VERSION:2.0
+PRODID:-//Test//Test//EN
+BEGIN:VEVENT
+UID:recurring-uid@test
+RECURRENCE-ID:20260302T060000Z
+DTSTART:20260302T080000Z
+DTEND:20260302T090000Z
+SUMMARY:Daily Standup (moved)
+DTSTAMP:20260101T000000Z
+SEQUENCE:1
+END:VEVENT
+END:VCALENDAR`;
+
 // Fake ICS that createRecurrenceException returns as masterIcs
 const FAKE_MASTER_ICS_WITH_EXCEPTION = `BEGIN:VCALENDAR
 VERSION:2.0
@@ -672,6 +688,54 @@ describe('modifyEventWithRecurringSupport', function () {
       expect(ICSEventHelpers.updateEventTimes).toHaveBeenCalled();
       expect(ICSEventHelpers.createRecurrenceException).not.toHaveBeenCalled();
       // Dialog must NOT have been shown for a non-recurring event
+      expect(dialogSpy.calls.length).toBe(0);
+    });
+  });
+
+  describe('when isException is true but event is a standalone DB exception (event.isRecurrenceException() === true)', function () {
+    // A standalone exception is a separate DB record (legacy or server-sent). When the
+    // drag handler resolves its ID, parseEventIdFromOccurrence returns the exception
+    // record's ID — so options.event IS the exception, not the master. Calling
+    // createOccurrenceException here would try to embed inline into the exception ICS
+    // rather than the master. The correct path is modifySimpleEvent (direct ICS update).
+
+    it('routes to modifySimpleEvent, not createOccurrenceException, even when isException is true', async function () {
+      // recurrenceId set → event.isRecurrenceException() returns true (standalone DB record)
+      const event = makeEvent(STANDALONE_EXCEPTION_ICS, { recurrenceId: '20260302T060000Z' } as any);
+      const result = await modifyEventWithRecurringSupport(
+        {
+          event,
+          originalOccurrenceStart: T_OCC2_START,
+          newStart: T_NEW_START,
+          newEnd: T_NEW_END,
+          isAllDay: false,
+          isException: true, // set by drag handler for any EventOccurrence with isException=true
+        },
+        'move',
+        'Daily Standup'
+      );
+
+      expect(result.success).toBe(true);
+      expect(ICSEventHelpers.updateEventTimes).toHaveBeenCalled();
+      expect(ICSEventHelpers.createRecurrenceException).not.toHaveBeenCalled();
+      expect(dialogSpy.calls.length).toBe(0);
+    });
+
+    it('does not show the dialog for standalone exceptions', async function () {
+      const event = makeEvent(STANDALONE_EXCEPTION_ICS, { recurrenceId: '20260302T060000Z' } as any);
+      await modifyEventWithRecurringSupport(
+        {
+          event,
+          originalOccurrenceStart: T_OCC2_START,
+          newStart: T_NEW_START,
+          newEnd: T_NEW_END,
+          isAllDay: false,
+          isException: true,
+        },
+        'move',
+        'Daily Standup'
+      );
+
       expect(dialogSpy.calls.length).toBe(0);
     });
   });

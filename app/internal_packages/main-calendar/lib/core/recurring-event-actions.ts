@@ -225,17 +225,20 @@ export async function modifyEventWithRecurringSupport(
         masterEvent: event,
       };
     }
-  } else if (isException) {
-    // Inline exception being modified — always edit just this exception.
-    // `originalOccurrenceStart` must have been set to the RECURRENCE-ID value
-    // (occurrence.recurrenceIdStart) by the caller, not the exception's moved start.
+  } else if (isException && !event.isRecurrenceException()) {
+    // Inline exception being modified — `options.event` is the master event (guaranteed
+    // because `parseEventIdFromOccurrence` strips the `-e{N}` suffix from inline occurrences).
+    // `originalOccurrenceStart` must be the RECURRENCE-ID value (occurrence.recurrenceIdStart),
+    // not the exception's moved DTSTART.
     createOccurrenceException(options);
     return {
       success: true,
       masterEvent: event,
     };
   } else {
-    // Non-recurring event or standalone DB exception — simple update
+    // Non-recurring event, or standalone DB exception (event.isRecurrenceException() === true).
+    // For standalone exceptions the loaded event IS the exception record, not the master, so
+    // createOccurrenceException would embed into the wrong ICS. Just update it directly.
     modifySimpleEvent(options);
     return {
       success: true,

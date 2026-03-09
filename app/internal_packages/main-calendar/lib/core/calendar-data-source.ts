@@ -246,6 +246,8 @@ export function occurrencesForEvents(
         const isAwaitingMyResponse =
           myAttendee && myPartstat !== 'ACCEPTED' && myPartstat !== 'DECLINED';
 
+        const ridValue = vevent?.getFirstPropertyValue('recurrence-id');
+
         occurrences.push({
           start: occStart,
           end: occEnd,
@@ -259,6 +261,7 @@ export function occurrencesForEvents(
           isCancelled: status.toUpperCase() === 'CANCELLED',
           isPending: isTentativeStatus || isAwaitingMyResponse,
           isException: true,
+          recurrenceIdStart: ridValue ? (ridValue as any).toJSDate().getTime() / 1000 : undefined,
           isRecurring: true, // Exceptions are always from recurring series
           organizer: icsEvent.organizer ? { email: icsEvent.organizer } : null,
           attendees,
