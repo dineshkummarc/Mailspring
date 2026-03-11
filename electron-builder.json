@@ -105,17 +105,15 @@
     "icon": "win/mailspring-square.ico",
     "target": [
       {
-        "target": "nsis",
+        "target": "squirrel",
         "arch": ["x64"]
       }
     ]
   },
-  "nsis": {
-    "oneClick": false,
-    "allowToChangeInstallationDirectory": true,
-    "installerIcon": "win/mailspring-square.ico",
-    "uninstallerIcon": "win/mailspring-square.ico",
-    "include": "win/nsis-include.nsh"
+  "squirrelWindows": {
+    "iconUrl": "http://mailspring-builds.s3.amazonaws.com/assets/mailspring-square.ico",
+    "loadingGif": "win/loading.gif",
+    "setupIcon": "win/mailspring-square.ico"
   },
   "linux": {
     "executableName": "mailspring",

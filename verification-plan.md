@@ -241,27 +241,48 @@ These files must exist alongside (or within) the application directory:
 | 4.4.5 | Product version | `.VersionInfo.ProductVersion` | `1.19.0` |
 | 4.4.6 | Metadata comparison | Compare all VersionInfo fields between old and new | Identical |
 
-### 4.5 NSIS Installer (New) vs Squirrel Installer (Old)
+### 4.5 Squirrel Installer
 
-> **Note:** The old build used `electron-winstaller` (Squirrel.Windows) producing `MailspringSetup.exe`. The new build uses NSIS. These are fundamentally different installer technologies, so direct binary comparison is not possible. Instead, verify equivalent end-user behavior.
-
-| # | Check | Command / Method | Expected Result |
-|---|-------|-----------------|-----------------|
-| 4.5.1 | Installer file exists | `ls {DIR}/Mailspring*.exe` (installer, not the app exe) | File exists |
-| 4.5.2 | Installer is signed | `signtool verify /pa {DIR}/Mailspring*.exe` | Valid signature |
-| 4.5.3 | Installer icon | Visual inspection or resource extraction | Mailspring icon (mailspring-square.ico) |
-| 4.5.4 | Install creates app dir | Run installer, check `%LOCALAPPDATA%\Programs\Mailspring\` or chosen dir | Application installed correctly |
-| 4.5.5 | Registry entries created | `reg query "HKCU\SOFTWARE\Classes\mailspring"` after install | Protocol handler registered |
-| 4.5.6 | mailto handler available | `reg query "HKCU\SOFTWARE\Clients\Mail\Mailspring"` after install | Mail client registered |
-| 4.5.7 | Uninstaller works | Run uninstaller from Add/Remove Programs | Clean removal |
-| 4.5.8 | Resource files deployed | Check installed directory for .reg, .vbs, .xml, .png files | All present |
-
-### 4.6 Windows Architecture
+> Both old and new builds use Squirrel.Windows (old: `electron-winstaller`, new: `electron-builder-squirrel-windows`). The underlying Squirrel vendor binaries are the same, so installer format and update mechanism are compatible.
 
 | # | Check | Command / Method | Expected Result |
 |---|-------|-----------------|-----------------|
-| 4.6.1 | EXE architecture | `dumpbin /headers {WINAPP}/mailspring.exe \| findstr "machine"` or `file mailspring.exe` | x64 (AMD64) |
-| 4.6.2 | Architecture matches old | Compare architecture of both builds | Both x64 |
+| 4.5.1 | Setup EXE exists | `ls {DIR}/MailspringSetup.exe` or `ls {DIR}/Mailspring*Setup*.exe` | File exists |
+| 4.5.2 | Setup EXE is signed | `signtool verify /pa {DIR}/MailspringSetup.exe` | Valid signature (if signing enabled) |
+| 4.5.3 | RELEASES file exists | `ls {DIR}/RELEASES` | File exists (Squirrel update manifest) |
+| 4.5.4 | Nupkg file exists | `ls {DIR}/Mailspring*.nupkg` | File exists (Squirrel update package) |
+| 4.5.5 | Setup icon | Visual inspection or resource extraction | Mailspring icon (mailspring-square.ico) |
+| 4.5.6 | Loading GIF used | Verify installer splash during install | Shows `loading.gif` spinner |
+| 4.5.7 | Install creates app dir | Run installer, check `%LOCALAPPDATA%\Mailspring\` | Application installed |
+| 4.5.8 | Update.exe present | `ls %LOCALAPPDATA%\Mailspring\Update.exe` | File exists (Squirrel updater) |
+| 4.5.9 | App version folder | `ls %LOCALAPPDATA%\Mailspring\app-1.19.0\` | Versioned folder exists |
+| 4.5.10 | Registry entries created | `reg query "HKCU\SOFTWARE\Classes\mailspring"` after install | Protocol handler registered |
+| 4.5.11 | mailto handler available | `reg query "HKCU\SOFTWARE\Clients\Mail\Mailspring"` after install | Mail client registered |
+| 4.5.12 | Resource files deployed | Check installed directory for .reg, .vbs, .xml, .png files | All present |
+| 4.5.13 | Uninstaller works | Run uninstaller from Add/Remove Programs | Clean removal |
+
+### 4.6 Squirrel Update Compatibility
+
+> **Critical:** Existing users on old Squirrel builds must be able to update to new Squirrel builds seamlessly. These checks verify that the update channel is preserved.
+
+| # | Check | Command / Method | Expected Result |
+|---|-------|-----------------|-----------------|
+| 4.6.1 | RELEASES file format | `cat {DIR}/RELEASES` | Standard Squirrel RELEASES format: `SHA1 filename size` |
+| 4.6.2 | Nupkg is valid | `unzip -t {DIR}/Mailspring*.nupkg` | Valid ZIP/NuGet package |
+| 4.6.3 | Nupkg contains app | `unzip -l {DIR}/Mailspring*.nupkg \| grep mailspring.exe` | EXE present in package |
+| 4.6.4 | App name in nupkg matches | Check nupkg ID field | `Mailspring` (must match old package name) |
+| 4.6.5 | Version in nupkg | Check nupkg version field | `1.19.0` |
+| 4.6.6 | Delta update from old build | Install old build, point update URL to new RELEASES, trigger update | Update applies successfully without reinstall |
+| 4.6.7 | Update.exe version | Compare Update.exe between old and new installs | Compatible Squirrel version |
+| 4.6.8 | Shortcut survives update | After update, check Start Menu and Desktop shortcuts | Shortcuts still work |
+| 4.6.9 | `--squirrel-*` args handled | `mailspring.exe --squirrel-install` | App handles Squirrel lifecycle events |
+
+### 4.7 Windows Architecture
+
+| # | Check | Command / Method | Expected Result |
+|---|-------|-----------------|-----------------|
+| 4.7.1 | EXE architecture | `dumpbin /headers {WINAPP}/mailspring.exe \| findstr "machine"` or `file mailspring.exe` | x64 (AMD64) |
+| 4.7.2 | Architecture matches old | Compare architecture of both builds | Both x64 |
 
 ---
 
@@ -489,13 +510,11 @@ The following differences between old and new builds are **expected** and should
 
 | Difference | Reason |
 |-----------|--------|
-| Installer technology (Windows): Squirrel → NSIS | Intentional migration from electron-winstaller to electron-builder NSIS |
-| Windows install path: `%LOCALAPPDATA%\Mailspring` → `%LOCALAPPDATA%\Programs\Mailspring` | NSIS default vs Squirrel default |
-| Windows update mechanism | Squirrel auto-update vs NSIS update (may need separate verification) |
-| Build metadata in package.json | electron-builder may add/modify metadata |
+| Build metadata in package.json | electron-builder may add/modify metadata fields |
 | File ordering inside ASAR | Different packing algorithms may produce different ordering |
 | ASAR file size | Different compression/packing may produce slightly different sizes |
-| Installer file size | Different installer technology produces different sizes |
+| Squirrel nupkg/RELEASES file layout | electron-builder-squirrel-windows may produce slightly different nupkg internals vs electron-winstaller, but the Squirrel update protocol is the same |
+| Installer file size | Slightly different compression or resource embedding |
 | Timestamps in packages | Build time differences |
 | DMG layout/appearance | electron-builder DMG creation vs custom `create-mac-zip` task |
 | Linux package maintainer scripts | electron-builder's FPM-based generation vs hand-written scripts |
