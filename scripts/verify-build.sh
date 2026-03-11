@@ -1,14 +1,3 @@
-# Build Migration Verification Plan
-
-## Overview
-
-This document defines executable assertions to verify that artifacts produced by the **new** electron-builder-based build system are equivalent to those produced by the **old** Grunt + @electron/packager build system.
-
-Run the script at the bottom (`scripts/verify-build.sh`) against both OLD and NEW build artifacts, then diff the report outputs.
-
-## Setup
-
-```bash
 # Point these at your build output directories
 export OLD_DIR="./app/dist-old"
 export NEW_DIR="./app/dist"
@@ -30,26 +19,6 @@ export NEW_RPM="$NEW_DIR/mailspring-1.19.0.x86_64.rpm"
 # Temp dirs for extraction
 export WORK="/tmp/mailspring-verify-$$"
 ```
-
-## Required Tools
-
-- `npx asar` (from npm, for ASAR inspection)
-- `jq` (JSON parsing)
-- `codesign`, `spctl`, `stapler`, `/usr/libexec/PlistBuddy` (macOS only)
-- `dpkg-deb` (DEB inspection, Linux/macOS)
-- `rpm` or `rpm2cpio` (RPM inspection)
-- `unzip` (nupkg/ZIP inspection)
-- `xmllint` (XML validation)
-- `desktop-file-validate` (Linux desktop file validation)
-- `appstream-util` (AppData validation)
-- `file` (binary architecture detection)
-
----
-
-## Executable Verification Script
-
-The following is a self-contained bash script. Run it once per build, redirecting output to a file, then diff the two report files.
-
 ```bash
 #!/usr/bin/env bash
 # verify-build.sh — Build artifact verification for Mailspring
@@ -1108,26 +1077,6 @@ echo "  - /tmp/verify-appdata-*.xml                (Linux AppData/metainfo)"
 
 exit $FAIL
 ```
-
----
-
-## Known Expected Differences
-
-When diffing OLD vs NEW reports, these differences are **expected**:
-
-| Difference | Reason |
-|-----------|--------|
-| Build metadata in package.json | electron-builder may add/modify metadata fields |
-| File ordering inside ASAR | Different packing algorithms may produce different ordering |
-| ASAR file size | Different compression/packing may produce slightly different sizes |
-| Squirrel nupkg/RELEASES file layout | electron-builder-squirrel-windows may produce slightly different nupkg internals vs electron-winstaller, but the Squirrel update protocol is the same |
-| Installer file size | Slightly different compression or resource embedding |
-| Timestamps in packages | Build time differences |
-| DMG layout/appearance | electron-builder DMG creation vs custom `create-mac-zip` task |
-| Linux package maintainer scripts | electron-builder's FPM-based generation vs hand-written scripts |
-
-## Quick Start
-
 ```bash
 # 1. Build with old system, save artifacts
 git stash && npm run build && mv app/dist app/dist-old
@@ -1151,4 +1100,3 @@ diff /tmp/verify-desktop-dist-old.desktop /tmp/verify-desktop-dist.desktop
 diff /tmp/verify-appdata-dist-old.xml /tmp/verify-appdata-dist.xml
 diff /tmp/verify-nuspec-dist-old.nuspec /tmp/verify-nuspec-dist.nuspec
 diff /tmp/verify-RELEASES-dist-old /tmp/verify-RELEASES-dist
-```
