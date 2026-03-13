@@ -154,7 +154,6 @@ export default class MessageControls extends React.Component<MessageControlsProp
 
   _onCopyToClipboard = () => {
     const { message, thread } = this.props;
-    const clipboard = require('electron').clipboard;
     const data = `
       AccountID: ${message.accountId}
       Message ID: ${message.id}
@@ -162,7 +161,7 @@ export default class MessageControls extends React.Component<MessageControlsProp
       Thread ID: ${thread.id}
       Thread Metadata: ${JSON.stringify(thread.pluginMetadata, null, '  ')}
     `;
-    clipboard.writeText(data);
+    navigator.clipboard.writeText(data);
   };
 
   render() {

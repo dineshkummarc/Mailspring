@@ -27,7 +27,7 @@ export default class ThreadSharingButton extends React.Component<{ items: any[];
   _onCopyMailboxLink = () => {
     // Note: This is the mailbox link, not the thread sharing link, but they are managed together
     // since this plugin also implements the receiving side (_onOpenThreadFromWeb).
-    require('electron').clipboard.writeText(this.props.thread.getMailboxPermalink());
+    navigator.clipboard.writeText(this.props.thread.getMailboxPermalink());
   };
 
   render() {

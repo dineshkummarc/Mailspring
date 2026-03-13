@@ -256,7 +256,7 @@ export default class ThreadListContextMenu {
         const id = this.threadIds[0];
         const thread = await DatabaseStore.findBy<Thread>(Thread, { id }).limit(1);
         if (!thread) return;
-        require('electron').clipboard.writeText(thread.getMailboxPermalink());
+        navigator.clipboard.writeText(thread.getMailboxPermalink());
       },
     };
   }
