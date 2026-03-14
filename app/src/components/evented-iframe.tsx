@@ -320,7 +320,9 @@ export class EventedIFrame extends React.Component<
           new MenuItem({
             label: localized('Copy Email Address'),
             click() {
-              navigator.clipboard.writeText(href.split('mailto:').pop());
+              navigator.clipboard
+                .writeText(href.split('mailto:').pop())
+                .catch(err => console.error('Failed to copy to clipboard:', err));
             },
           })
         );
@@ -337,7 +339,9 @@ export class EventedIFrame extends React.Component<
           new MenuItem({
             label: localized('Copy Link Address'),
             click() {
-              navigator.clipboard.writeText(href);
+              navigator.clipboard
+                .writeText(href)
+                .catch(err => console.error('Failed to copy to clipboard:', err));
             },
           })
         );
@@ -421,7 +425,9 @@ export class EventedIFrame extends React.Component<
         new MenuItem({
           label: localized('Copy'),
           click() {
-            navigator.clipboard.writeText(text);
+            navigator.clipboard
+              .writeText(text)
+              .catch(err => console.error('Failed to copy to clipboard:', err));
           },
         })
       );

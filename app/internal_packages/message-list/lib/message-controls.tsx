@@ -161,7 +161,9 @@ export default class MessageControls extends React.Component<MessageControlsProp
       Thread ID: ${thread.id}
       Thread Metadata: ${JSON.stringify(thread.pluginMetadata, null, '  ')}
     `;
-    navigator.clipboard.writeText(data);
+    navigator.clipboard
+      .writeText(data)
+      .catch(err => console.error('Failed to copy to clipboard:', err));
   };
 
   render() {

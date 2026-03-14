@@ -208,7 +208,10 @@ export default class ParticipantsTextField extends React.Component<ParticipantsT
     menu.append(
       new MenuItem({
         label: `${localized(`Copy`)} ${participant.email}`,
-        click: () => navigator.clipboard.writeText(participant.email),
+        click: () =>
+          navigator.clipboard
+            .writeText(participant.email)
+            .catch(err => console.error('Failed to copy to clipboard:', err)),
       })
     );
     menu.append(
