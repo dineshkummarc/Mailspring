@@ -20,18 +20,6 @@ const npmEnvs = {
     npm_config_target_arch: process.env.OVERRIDE_TO_INTEL ? 'x64' : process.arch,
     npm_config_disturl: 'https://electronjs.org/headers',
     npm_config_runtime: 'electron',
-    // Point npm at the project's node-gyp so prebuild-install (used by
-    // better-sqlite3) uses the up-to-date version that understands Electron
-    // 41 / Node.js 22 headers rather than whatever older version is bundled
-    // with the local npm installation.
-    npm_config_node_gyp: path.join(
-      __dirname,
-      '..',
-      'node_modules',
-      'node-gyp',
-      'bin',
-      'node-gyp.js'
-    ),
   }),
 };
 
@@ -145,13 +133,9 @@ async function sqliteMissingNanosleep() {
 
     // Check the static lib first (build-from-source), then the prebuilt .node binary
     const target = fs.existsSync(staticLib) ? staticLib : sharedLib;
-    safeExec(
-      `nm '${target}' | grep nanosleep`,
-      { ignoreStderr: true },
-      (err, resp) => {
-        resolve(resp === '');
-      }
-    );
+    safeExec(`nm '${target}' | grep nanosleep`, { ignoreStderr: true }, (err, resp) => {
+      resolve(resp === '');
+    });
   });
 }
 
